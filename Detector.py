@@ -3,8 +3,10 @@
 import re
 import os
 import stat
+import time
+import logging
 
-# detector without any UI
+logging.basicConfig(filename="maldetect.log",level=logging.INFO)
 
 # regex patterns start
 
@@ -14,7 +16,7 @@ base64 = r"(base64_[a-z]+\()"
 
 unsafe_func = r"(ini_[s]*[g]*[et]*[a-z]*)|(eval\()|([a-z]*[_]*exe[c]*)|(system\()|(php_uname\()|(safe_mode)|([a-z]*passthru\()"
 
-fupload = r"(copy\()|(move_uploaded_file)|"
+fupload = r"(copy\()|(move_uploaded_file)"
 
 uploadForm = r"(<form [\s\S]* enctype=[\S\s]*multipart\/form-data)|(<input [\s\S]*type=[\s\S]*file)"
 
@@ -40,6 +42,8 @@ phpscript = r"(<\?php[\s\S]*?>)"
 
 malware = []
 
+reason = []
+
 #  white lists
 
 Funcwhitelist = []
@@ -58,7 +62,7 @@ def regex(pattern,code,whitelist):
     # check a regex with a exeption
     if(whitelist):
         return False
-    if(re.search(pattern,code,re.IGNORECASE) != False):
+    if(re.search(pattern,code,re.IGNORECASE) != None):
         return True
     else:
         return False
@@ -112,6 +116,7 @@ def checkfile(dirs,hard,internal):
     global formatWhitelist
     global filefuncWhitelist
     global uploadFormWhitelist
+    global reason
 
     files = listfile(dirs)
     checkpass = False
@@ -144,24 +149,34 @@ def checkfile(dirs,hard,internal):
                     code = check.read()
                     if(regex(alfa,code,False) != False):
                          malware.append(item)
+                         reason.append("ALFA-SHELL")
                     elif(regex(unsafe_func,code,checkpass) != False):
                          malware.append(item)
+                         reason.append("UNSAFE-FUNC")
                     elif(regex(fupload,code,checkpass1) != False):
                          malware.append(item)
+                         reason.append("UPLOAD-FUNC")
                     elif(regex(defacement,code,False) != False):
                         malware.append(item)
+                        reason.append("DEFACE")
                     elif(regex(base64,code,False) != False):
                         malware.append(item)
+                        reason.append("BASE64")
                     elif(regex(uploadForm,code,checkpass3) != False):
                         malware.append(item)
+                        reason.append("UPLOAD-FORM")
                     elif(regex(symlink,code,False) != False):
                         malware.append(item)
+                        reason.append("SYMLINK")
                     elif(regex(filefunc,code,checkpass2) != False):
                         malware.append(item)
+                        reason.append("FILE-MANAGE-FUNC")
                     elif(regex(otherScripts,code,False) != False):
                         malware.append(item)
+                        reason.append("SCRIPTING")
                     elif(regex(weevely,code,False) != False and hard == True):
                         malware.append(item)
+                        reason.append("WEEVELY")
 
                     check.close()
                 else:
@@ -169,11 +184,14 @@ def checkfile(dirs,hard,internal):
                    code = check.read()
                    if(regex(phpscript,code,False) != False):
                         malware.append(item)
+                        reason.append("PHP-IN-OTHER-FORMAT")
                    elif(regex(defacement,code,False) != False):
-                       malware.append(item)
+                        malware.append(item)
+                        reason.append("DEFACE-IN-OTHER-FORMAT")
             else:
                 if(item not in formatWhitelist):
                     malware.append(item)
+                    reason.append("FORMAT")
 
 
 
@@ -181,7 +199,11 @@ def checkfile(dirs,hard,internal):
         for eachDir in listDir(dirs):
             checkfile(eachDir,hard,"y")
 
-checkfile("directory",False,True)
-
+checkfile("malDirectory",False,True)
+num = 0
 for malwares in malware:
-    os.chmod(malwares,0o400)
+        nowtime = time.asctime(time.localtime(time.time()))
+        fname = malwares.split("/")[-1]
+        os.rename(malwares,"mal/%s"%fname)
+        logging.info("%s - %s Has Been Detected for ' %s ' \n "%(nowtime,fname,reason[num]))
+        num = num+1
