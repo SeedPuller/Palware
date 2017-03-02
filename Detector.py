@@ -38,11 +38,7 @@ phpscript = r"(<\?php[\s\S]*?>)"
 
 # regex patterns end
 
-# detected malware names ...
 
-malware = []
-
-reason = []
 
 #  white lists
 
@@ -96,8 +92,6 @@ def listfile(dirs):
 
 def checkfile(dirs,hard,internal):
     # check files for malwares
-
-    global malware
     global formatallow
     global editAbleF
     global alfa
@@ -116,7 +110,10 @@ def checkfile(dirs,hard,internal):
     global formatWhitelist
     global filefuncWhitelist
     global uploadFormWhitelist
-    global reason
+
+    # detected malware names ...
+    malware = []
+    reason = []
 
     files = listfile(dirs)
     checkpass = False
@@ -193,17 +190,18 @@ def checkfile(dirs,hard,internal):
                     malware.append(item)
                     reason.append("FORMAT")
 
-
-
     if (internal == True):
         for eachDir in listDir(dirs):
             checkfile(eachDir,hard,"y")
-
-checkfile("malDirectory",False,True)
-num = 0
-for malwares in malware:
+    num = 0
+    for malwares in malware:
         nowtime = time.asctime(time.localtime(time.time()))
         fname = malwares.split("/")[-1]
         os.rename(malwares,"mal/%s"%fname)
         logging.info("%s - %s Has Been Detected for ' %s ' \n "%(nowtime,fname,reason[num]))
         num = num+1
+
+while True:
+
+    checkfile("maltestDir",False,True)
+    time.sleep(1)
