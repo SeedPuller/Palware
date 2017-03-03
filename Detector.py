@@ -36,6 +36,8 @@ editAbleF = [".php",".html",".htm",".txt",".js"]
 
 phpscript = r"(<\?php[\s\S]*?>)"
 
+malicious_coding = r"(\$[a-z-A-Z0-9_]*\()|(create_function\()"
+
 # regex patterns end
 
 
@@ -110,6 +112,7 @@ def checkfile(dirs,hard,internal):
     global formatWhitelist
     global filefuncWhitelist
     global uploadFormWhitelist
+    global malicious_coding
 
     # detected malware names ...
     malware = []
@@ -168,6 +171,9 @@ def checkfile(dirs,hard,internal):
                     elif(regex(filefunc,code,checkpass2) != False):
                         malware.append(item)
                         reason.append("FILE-MANAGE-FUNC")
+                    elif(regex(malicious_coding,code,False) != False):
+                        malware.append(item)
+                        reason.append("MALICIOUS-CODING")
                     elif(regex(otherScripts,code,False) != False):
                         malware.append(item)
                         reason.append("SCRIPTING")
@@ -177,7 +183,7 @@ def checkfile(dirs,hard,internal):
 
                     check.close()
                 else:
-                   check = open(item,"r")
+                   check = open(item,"r",errors="ignore")
                    code = check.read()
                    if(regex(phpscript,code,False) != False):
                         malware.append(item)
@@ -185,6 +191,7 @@ def checkfile(dirs,hard,internal):
                    elif(regex(defacement,code,False) != False):
                         malware.append(item)
                         reason.append("DEFACE-IN-OTHER-FORMAT")
+                   check.close()
             else:
                 if(item not in formatWhitelist):
                     malware.append(item)
@@ -203,5 +210,5 @@ def checkfile(dirs,hard,internal):
 
 while True:
 
-    checkfile("maltestDir",False,True)
+    checkfile("maltest",False,True)
     time.sleep(1)
