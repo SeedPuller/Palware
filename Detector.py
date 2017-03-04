@@ -30,7 +30,7 @@ defacement = r"(hacked)|(bypass)|(shell)"
 
 otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
 
-formatallow = [".php",".jpg",".png",".mp4",".html",".htm",".jpeg",".txt",".css",".psd",".sql",".zip",".js",".doc",".mo",".po",".ttf"]
+formatallow = [".php",".jpg",".png",".mp4",".html",".htm",".jpeg",".txt",".css",".psd",".sql",".zip",".js",".doc",".mo",".po",".ttf",".pdf"]
 
 editAbleF = [".php",".html",".htm",".txt",".js"]
 
@@ -140,12 +140,13 @@ def checkfile(dirs,hard,internal):
                 # file infos - format
 
             FileInfo = os.path.splitext(item)
-            if(FileInfo[1] in formatallow):
-                if(FileInfo[1] in editAbleF):
+            fformat = FileInfo[1].lower()
+            if(fformat in formatallow):
+                if(fformat in editAbleF):
 
                     # open files and check regexes
 
-                    check = open(item,"r")
+                    check = open(item,"r",errors="ignore")
                     code = check.read()
                     if(regex(alfa,code,False) != False):
                          malware.append(item)
