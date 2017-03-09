@@ -79,8 +79,6 @@ def send_mail(user,pasw,destination,subject,msg):
         server.close()
         return True
     except:
-        fopen = open("err.txt","w")
-        fopen.write("ERROR !")
         return False
 
 def regex(pattern,code,whitelist):
@@ -239,11 +237,6 @@ def checkfile(dirs,hard,internal):
         logging.info("%s - %s Has Been Detected for ' %s ' \n "%(nowtime,malwares,reason[num]))
         if(email):
             send_mail(mailA,mailP,Ereceiver,"Malware Detected !","%s - %s Has Been Detected for ' %s ' \n "%(nowtime,malwares,reason[num]))
-            fopen = open("err.txt","w")
-            fopen.write("%s - %s - %s"%(mailA,mailP,Ereceiver))
-        else:
-            fopen = open("err.txt","w")
-            fopen.write("Flase !")
         num = num+1
 
 # handling arguments
