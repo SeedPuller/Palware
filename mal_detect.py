@@ -7,7 +7,7 @@ import time
 import logging
 import sys
 import getopt
-
+import smtplib
 logging.basicConfig(filename="maldetect.log",level=logging.INFO)
 
 # regex patterns start
@@ -45,6 +45,10 @@ malicious_coding = r"(\$[a-z-A-Z0-9_]*\()|(create_function\()"
 # Vars
 internal = False
 directory = ""
+email = False
+Ereceiver = []
+mailA = ""
+mailP = ""
 #  white lists
 
 Funcwhitelist = []
@@ -58,6 +62,26 @@ filefuncWhitelist = []
 uploadFormWhitelist = []
 
 #functions
+
+def send_mail(user,pasw,destination,subject,msg):
+    if(type(destination) is not list):
+        destination = [destination]
+        destination = ', '.join(destination)
+    else:
+        destination = ', '.join(destination)
+    message = "From: %s\n To: %s \n Subject: %s \n\n %s" % (user, destination, subject, msg)
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.ehlo()
+        server.starttls()
+        server.login(user, pasw)
+        server.sendmail(user, destination, message)
+        server.close()
+        return True
+    except:
+        fopen = open("err.txt","w")
+        fopen.write("ERROR !")
+        return False
 
 def regex(pattern,code,whitelist):
     # check a regex with a exeption
@@ -119,7 +143,7 @@ def checkfile(dirs,hard,internal):
     global filefuncWhitelist
     global uploadFormWhitelist
     global malicious_coding
-
+    global email,mailA,mailP,Ereceiver
     # detected malware names ...
     malware = []
     reason = []
@@ -212,13 +236,20 @@ def checkfile(dirs,hard,internal):
         nowtime = time.asctime(time.localtime(time.time()))
         fname = malwares.split("/")[-1]
         os.rename(malwares,"mal/%s"%fname)
-        logging.info("%s - %s Has Been Detected for ' %s ' \n "%(nowtime,fname,reason[num]))
+        logging.info("%s - %s Has Been Detected for ' %s ' \n "%(nowtime,malwares,reason[num]))
+        if(email):
+            send_mail(mailA,mailP,Ereceiver,"Malware Detected !","%s - %s Has Been Detected for ' %s ' \n "%(nowtime,malwares,reason[num]))
+            fopen = open("err.txt","w")
+            fopen.write("%s - %s - %s"%(mailA,mailP,Ereceiver))
+        else:
+            fopen = open("err.txt","w")
+            fopen.write("Flase !")
         num = num+1
 
 # handling arguments
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'd:f:e:F:u:U:i', ['directory=', 'function-whitelist=','extension-whitelist=','file-managing-whitelist=','upload-func-whitelist=','upload-form-whitelist=', 'internal-check'])
+    opts, args = getopt.getopt(sys.argv[1:], 'd:f:e:F:u:U:E:g:p:r:i', ['directory=', 'function-whitelist=','extension-whitelist=','file-managing-whitelist=','upload-func-whitelist=','upload-form-whitelist=', "email","gmailA=", "gmailp", "receiver",'internal-check'])
 except getopt.GetoptError as e:
     print(e)
     sys.exit(2)
@@ -248,9 +279,21 @@ for opt, arg in opts:
         arg = arg.split(",")
         for cArg in arg:
             uploadFormWhitelist.append(cArg)
+    elif opt in ('-E', '--email'):
+        email = True
+    elif opt in ('-g', '--gmailA'):
+        mailA = arg
+    elif opt in ('-p', '--gmailp'):
+        mailP = arg
+    elif opt in ('-r', '--receiver'):
+        arg = arg.split(",")
+        for cArg in arg:
+            Ereceiver.append(cArg)
     else:
         print("ERR")
         sys.exit(2)
+
+# prepare for logging
 num = 0
 if(internal):
     printinternal = "ON"
