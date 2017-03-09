@@ -5,6 +5,8 @@ import os
 import stat
 import time
 import logging
+import sys
+import getopt
 
 logging.basicConfig(filename="maldetect.log",level=logging.INFO)
 
@@ -40,8 +42,9 @@ malicious_coding = r"(\$[a-z-A-Z0-9_]*\()|(create_function\()"
 
 # regex patterns end
 
-
-
+# Vars
+internal = False
+directory = ""
 #  white lists
 
 Funcwhitelist = []
@@ -94,6 +97,9 @@ def listfile(dirs):
 
 def checkfile(dirs,hard,internal):
     # check files for malwares
+    if(dirs == ""):
+        print("No directory defined")
+        sys.exit()
     global formatallow
     global editAbleF
     global alfa
@@ -178,7 +184,7 @@ def checkfile(dirs,hard,internal):
                     elif(regex(otherScripts,code,False) != False):
                         malware.append(item)
                         reason.append("SCRIPTING")
-                    elif(regex(weevely,code,False) != False and hard == True):
+                    elif(hard == True and regex(weevely,code,False) != False ):
                         malware.append(item)
                         reason.append("WEEVELY")
 
@@ -209,7 +215,73 @@ def checkfile(dirs,hard,internal):
         logging.info("%s - %s Has Been Detected for ' %s ' \n "%(nowtime,fname,reason[num]))
         num = num+1
 
-while True:
+# handling arguments
 
-    checkfile("maltest",False,True)
+try:
+    opts, args = getopt.getopt(sys.argv[1:], 'd:f:e:F:u:U:i', ['directory=', 'function-whitelist=','extension-whitelist=','file-managing-whitelist=','upload-func-whitelist=','upload-form-whitelist=', 'internal-check'])
+except getopt.GetoptError as e:
+    print(e)
+    sys.exit(2)
+
+for opt, arg in opts:
+    if opt in ('-d', '--directory'):
+        directory = arg
+    elif opt in ('-i', '--internal-check'):
+        internal = True
+    elif opt in ('-f', '--function-whitelist'):
+        arg = arg.split(",")
+        for cArg in arg:
+            Funcwhitelist.append(cArg)
+    elif opt in ('-e', '--extension-whitelist'):
+        arg = arg.split(",")
+        for cArg in arg:
+            formatWhitelist.append(cArg)
+    elif opt in ('-F', '--file-managing-whitelist'):
+        arg = arg.split(",")
+        for cArg in arg:
+            filefuncWhitelist.append(cArg)
+    elif opt in ('-u', '--upload-func-whitelist'):
+        arg = arg.split(",")
+        for cArg in arg:
+            upWhitelist.append(cArg)
+    elif opt in ('-U', '--upload-form-whitelist'):
+        arg = arg.split(",")
+        for cArg in arg:
+            uploadFormWhitelist.append(cArg)
+    else:
+        print("ERR")
+        sys.exit(2)
+num = 0
+if(internal):
+    printinternal = "ON"
+else:
+    printinternal = "OFF"
+if(len(Funcwhitelist) < 1):
+    printFuncW = "None"
+else:
+    printFuncW = ','.join(Funcwhitelist)
+if(len(formatWhitelist) < 1):
+    printformatW = "None"
+else:
+    printformatW = ','.join(formatWhitelist)
+if(len(filefuncWhitelist) < 1):
+    printfilefuncW = "None"
+else:
+    printfilefuncW = ','.join(filefuncWhitelist)
+if(len(upWhitelist) < 1):
+    printupW = "None"
+else:
+    printupW = ','.join(upWhitelist)
+if(len(uploadFormWhitelist) < 1):
+    ptintupformW = "None"
+else:
+    ptintupformW = ','.join(uploadFormWhitelist)
+while True:
+    if(num < 1):
+        pass
+        nowtime = time.asctime(time.localtime(time.time()))
+        logging.info(" ==== \n"+ nowtime + "- Started With These Args : \n directory : " + directory + " \n internal : " + printinternal +" \n function whiteList : "+ printFuncW +" \n extension whiteList : "+ printformatW +"\n file-managing-whiteList : "+ printfilefuncW +"\n upload-func-whiteList : "+ printupW +"\n upload-form-whiteList : "+ ptintupformW +"\n === \n ")
+    checkfile(directory,False,internal)
     time.sleep(1)
+    num += 1
+
