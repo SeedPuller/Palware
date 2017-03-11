@@ -1,70 +1,86 @@
-#!/usr/bin/python3
-
+import subprocess
 import re
-import os
-import stat
-import time
-import logging
 import sys
-import getopt
 import smtplib
-logging.basicConfig(filename="maldetect.log",level=logging.INFO)
-
-# regex patterns start
-
-alfa = r"(alfa[_[a-z]+)|(_+z[a-zA-z0-9]+cg\()"
-
-base64 = r"(base64_[a-z]+\()"
-
-unsafe_func = r"(ini_[s]*[g]*[et]*[a-z]*)|(eval\()|([a-z]*[_]*exe[c]*)|(system\()|(php_uname\()|(safe_mode)|([a-z]*passthru\()"
-
-fupload = r"(copy\()|(move_uploaded_file)"
-
-uploadForm = r"(<form [\s\S]* enctype=[\S\s]*multipart\/form-data)|(<input [\s\S]*type=[\s\S]*file)"
-
-symlink = r"(sym[link]*)"
-
-filefunc = r"(chmod\()|(unlink\()|(rmdir\()|(rename\()"
-
-weevely = r"([b][a-zA-z0-9_\-|{}!%\^&@\*+]*[d]*[e]{1}\()"
-
-defacement = r"(hacked)|(bypass)|(shell)"
-
-otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
-
-formatallow = [".php",".jpg",".png",".mp4",".html",".htm",".jpeg",".txt",".css",".psd",".sql",".zip",".js",".doc",".mo",".po",".ttf",".pdf"]
-
-editAbleF = [".php",".html",".htm",".txt",".js"]
-
-phpscript = r"(<\?php[\s\S]*?>)"
-
-malicious_coding = r"(\$[a-z-A-Z0-9_]*\()|(create_function\()"
-
-# regex patterns end
-
-# Vars
-internal = False
+import os
+# setting necessary vars
+green = "\033[32m"
+normal = "\033[m"
+red = "\033[31m"
+white = "\033[37m"
+orange = "\033[33m"
+print(" %s ┌─────────────────────────────────────────────────┐\n│                                                 │\n│ m    m            #           mm            m   │\n│ ##  ##  mmm    mmm#           ##   m mm   mm#mm │\n│ # ## # \"   #  #\" \"#          #  #  #\"  #    #   │ \n| #   "" # m\"\"\"#  #   #          #mm#  #   #    #   │\n│ #    # \"mm\"#  \"#m##         #    # #   #    \"mm │\n│                                                 │\n│                                                 │\n└─────────────────────────────────────────────────┘\n %s" % (red, normal))
+print(" %s [+]  PHP Malware Scanner Ver 1.4\n\n%s" % (green, normal))
 directory = ""
-email = False
-Ereceiver = []
-mailA = ""
-mailP = ""
-#  white lists
+internal = ""
+unsafef = ""
+uploadfunc = ""
+uploadform = ""
+filemanage = ""
+extensions = ""
+emailV = False
+usern = ""
+pasw = ""
+dest = ""
+filename = "mal_detect.py"
 
-Funcwhitelist = []
+# defining functions
 
-upWhitelist = []
 
-formatWhitelist = []
+def saveopt(conf_path):  # saving options in 'conf_path'
+    if os.path.isfile(conf_path):
+        os.remove(conf_path)  # if option has been exsits , remove it to save new options
+    savefile = open(conf_path, "w")
+    if savefile.write("directory:%s\ninternal:%s\nunsafe-func:%s\nuploadfunc:%s\nuploadform:%s\nfilemanage:%s\nextenstion:%s\nemailV:%s\nusern:%s\npasswd:%s\ndest:%s" % (directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, emailV, usern, pasw, dest)):
+        return True
+    else:
+        return False
 
-filefuncWhitelist = []
 
-uploadFormWhitelist = []
+def loadopt(conf_path):  # load options from 'conf_path'
+    global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, emailV, usern, pasw, dest
+    if os.path.isfile(conf_path):
+        loadfile = open(conf_path, "r")
+        for lines in loadfile.readlines():  # check files content and take options
+            if len(lines.split(":")) > 1:
+                arg = lines.split(":")[1]
+            else:
+                arg = ""
+            if "directory:" in lines:
+                directory = arg.replace("\n", "")
+            elif "internal:" in lines:
+                internal = arg.replace("\n", "")
+            elif "unsafe-func:" in lines:
+                unsafef = arg.replace("\n", "")
+            elif "uploadfunc" in lines:
+                uploadfunc = arg.replace("\n", "")
+            elif "uploadform:" in lines:
+                uploadform = arg.replace("\n", "")
+            elif "filemanage:" in lines:
+                filemanage = arg.replace("\n", "")
+            elif "extenstion:" in lines:
+                extensions = arg.replace("\n", "")
+            elif "emailV:" in lines:
+                if "False" in arg.replace("\n", ""):
+                    arg = False
+                else:
+                    arg = True
+                emailV = arg
+                print(emailV)
+            elif "usern:" in lines:
+                usern = arg.replace("\n", "")
+            elif "passwd:" in lines:
+                pasw = arg.replace("\n", "")
+            elif "dest:" in lines:
+                dest = arg.replace("\n", "")
+        return "OK"
 
-#functions
+    else:
+        return "NOFLIE"
 
-def send_mail(user,pasw,destination,subject,msg):
-    if(type(destination) is not list):
+
+def send_mail(user, paswd, destination, subject, msg):  # send mail function using gmail
+    if type(destination) is not list:
         destination = [destination]
         destination = ', '.join(destination)
     else:
@@ -74,250 +90,174 @@ def send_mail(user,pasw,destination,subject,msg):
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.ehlo()
         server.starttls()
-        server.login(user, pasw)
+        server.login(user, paswd)
         server.sendmail(user, destination, message)
         server.close()
         return True
     except:
         return False
 
-def regex(pattern,code,whitelist):
-    # check a regex with a exeption
-    if(whitelist):
-        return False
-    if(re.search(pattern,code,re.IGNORECASE) != None):
+
+def startapp(folder, intern, unsff, upfunc, upform, filemng, extns, emil):  # start scanning in background with arguments . uses 'nohup' command
+    global filename
+    if bashexec("sudo nohup python3 %s -d %s %s %s %s %s %s %s %s & 85" % (filename, folder, intern, unsff, upfunc, upform, filemng, extns, emil)):
         return True
     else:
         return False
 
 
-def listDir(dirs):
-    # list of all dirs in a directory
-
-    Dirs = []
-
-    for Dir in os.listdir(dirs):
-        Dir = os.path.join(dirs,Dir)
-        mode = os.stat(Dir)[stat.ST_MODE]
-        if(stat.S_ISDIR(mode)):
-            Dirs.append(Dir)
-
-    return Dirs
-
-def listfile(dirs):
-    # list all files in a directory
-
-    files = []
-
-    for item in os.listdir(dirs):
-        item = os.path.join(dirs,item)
-        mode = os.stat(item)[stat.ST_MODE]
-        if(stat.S_ISREG(mode)):
-            files.append(item)
-
-    return files
-
-def checkfile(dirs,hard,internal):
-    # check files for malwares
-    if(dirs == ""):
-        print("No directory defined")
-        sys.exit()
-    global formatallow
-    global editAbleF
-    global alfa
-    global unsafe_func
-    global fupload
-    global weevely
-    global defacement
-    global otherScripts
-    global phpscript
-    global Funcwhitelist
-    global upWhitelist
-    global base64
-    global uploadForm
-    global symlink
-    global filefunc
-    global formatWhitelist
-    global filefuncWhitelist
-    global uploadFormWhitelist
-    global malicious_coding
-    global email,mailA,mailP,Ereceiver
-    # detected malware names ...
-    malware = []
-    reason = []
-
-    files = listfile(dirs)
-    checkpass = False
-    checkpass1 = False
-    checkpass2 = False
-    checkpass3 = False
-
-    for item in files:
-        if os.path.isfile(item):
-            # check exeptions and white lists
-
-            if(item in Funcwhitelist):
-                checkpass = True
-            if(item in upWhitelist):
-                checkpass1 = True
-            if(item in filefuncWhitelist):
-                checkpass2 = True
-            if(item in uploadFormWhitelist):
-                checkpass3 = True
-
-                # file infos - format
-
-            FileInfo = os.path.splitext(item)
-            fformat = FileInfo[1].lower()
-            if(fformat in formatallow):
-                if(fformat in editAbleF):
-
-                    # open files and check regexes
-
-                    check = open(item,"r",errors="ignore")
-                    code = check.read()
-                    if(regex(alfa,code,False) != False):
-                         malware.append(item)
-                         reason.append("ALFA-SHELL")
-                    elif(regex(unsafe_func,code,checkpass) != False):
-                         malware.append(item)
-                         reason.append("UNSAFE-FUNC")
-                    elif(regex(fupload,code,checkpass1) != False):
-                         malware.append(item)
-                         reason.append("UPLOAD-FUNC")
-                    elif(regex(defacement,code,False) != False):
-                        malware.append(item)
-                        reason.append("DEFACE")
-                    elif(regex(base64,code,False) != False):
-                        malware.append(item)
-                        reason.append("BASE64")
-                    elif(regex(uploadForm,code,checkpass3) != False):
-                        malware.append(item)
-                        reason.append("UPLOAD-FORM")
-                    elif(regex(symlink,code,False) != False):
-                        malware.append(item)
-                        reason.append("SYMLINK")
-                    elif(regex(filefunc,code,checkpass2) != False):
-                        malware.append(item)
-                        reason.append("FILE-MANAGE-FUNC")
-                    elif(regex(malicious_coding,code,False) != False):
-                        malware.append(item)
-                        reason.append("MALICIOUS-CODING")
-                    elif(regex(otherScripts,code,False) != False):
-                        malware.append(item)
-                        reason.append("SCRIPTING")
-                    elif(hard == True and regex(weevely,code,False) != False ):
-                        malware.append(item)
-                        reason.append("WEEVELY")
-
-                    check.close()
-                else:
-                   check = open(item,"r",errors="ignore")
-                   code = check.read()
-                   if(regex(phpscript,code,False) != False):
-                        malware.append(item)
-                        reason.append("PHP-IN-OTHER-FORMAT")
-                   elif(regex(defacement,code,False) != False):
-                        malware.append(item)
-                        reason.append("DEFACE-IN-OTHER-FORMAT")
-                   check.close()
-            else:
-                if(item not in formatWhitelist):
-                    malware.append(item)
-                    reason.append("FORMAT")
-
-    if (internal == True):
-        for eachDir in listDir(dirs):
-            checkfile(eachDir,hard,"y")
-    num = 0
-    for malwares in malware:
-        nowtime = time.asctime(time.localtime(time.time()))
-        fname = malwares.split("/")[-1]
-        os.rename(malwares,"mal/%s"%fname)
-        logging.info("%s - %s Has Been Detected for ' %s ' \n "%(nowtime,malwares,reason[num]))
-        if(email):
-            send_mail(mailA,mailP,Ereceiver,"Malware Detected !","%s - %s Has Been Detected for ' %s ' \n "%(nowtime,malwares,reason[num]))
-        num = num+1
-
-# handling arguments
-
-try:
-    opts, args = getopt.getopt(sys.argv[1:], 'd:f:e:F:u:U:E:g:p:r:i', ['directory=', 'function-whitelist=','extension-whitelist=','file-managing-whitelist=','upload-func-whitelist=','upload-form-whitelist=', "email","gmailA=", "gmailp", "receiver",'internal-check'])
-except getopt.GetoptError as e:
-    print(e)
-    sys.exit(2)
-
-for opt, arg in opts:
-    if opt in ('-d', '--directory'):
-        directory = arg
-    elif opt in ('-i', '--internal-check'):
-        internal = True
-    elif opt in ('-f', '--function-whitelist'):
-        arg = arg.split(",")
-        for cArg in arg:
-            Funcwhitelist.append(cArg)
-    elif opt in ('-e', '--extension-whitelist'):
-        arg = arg.split(",")
-        for cArg in arg:
-            formatWhitelist.append(cArg)
-    elif opt in ('-F', '--file-managing-whitelist'):
-        arg = arg.split(",")
-        for cArg in arg:
-            filefuncWhitelist.append(cArg)
-    elif opt in ('-u', '--upload-func-whitelist'):
-        arg = arg.split(",")
-        for cArg in arg:
-            upWhitelist.append(cArg)
-    elif opt in ('-U', '--upload-form-whitelist'):
-        arg = arg.split(",")
-        for cArg in arg:
-            uploadFormWhitelist.append(cArg)
-    elif opt in ('-E', '--email'):
-        email = True
-    elif opt in ('-g', '--gmailA'):
-        mailA = arg
-    elif opt in ('-p', '--gmailp'):
-        mailP = arg
-    elif opt in ('-r', '--receiver'):
-        arg = arg.split(",")
-        for cArg in arg:
-            Ereceiver.append(cArg)
+def stopapp():  # search proccesses and file scannings procces then kill them
+    global filename
+    regex = r"(root[\s]*[0-9]*[\s\S0-9]* -d)"
+    psx = bashoutput("ps aux | grep \"sudo nohup python3 %s\" " % filename)
+    search = re.search(regex, psx, re.IGNORECASE)
+    if search is not None:
+        pid = int(search.group().split()[1])
+        kill = bashoutput("sudo kill %d" % pid)
+        if "No such process" not in kill:
+            return True
+        else:
+            return False
     else:
-        print("ERR")
-        sys.exit(2)
+        return False
 
-# prepare for logging
-num = 0
-if(internal):
-    printinternal = "ON"
-else:
-    printinternal = "OFF"
-if(len(Funcwhitelist) < 1):
-    printFuncW = "None"
-else:
-    printFuncW = ','.join(Funcwhitelist)
-if(len(formatWhitelist) < 1):
-    printformatW = "None"
-else:
-    printformatW = ','.join(formatWhitelist)
-if(len(filefuncWhitelist) < 1):
-    printfilefuncW = "None"
-else:
-    printfilefuncW = ','.join(filefuncWhitelist)
-if(len(upWhitelist) < 1):
-    printupW = "None"
-else:
-    printupW = ','.join(upWhitelist)
-if(len(uploadFormWhitelist) < 1):
-    ptintupformW = "None"
-else:
-    ptintupformW = ','.join(uploadFormWhitelist)
-while True:
-    if(num < 1):
-        pass
-        nowtime = time.asctime(time.localtime(time.time()))
-        logging.info(" ==== \n"+ nowtime + "- Started With These Args : \n directory : " + directory + " \n internal : " + printinternal +" \n function whiteList : "+ printFuncW +" \n extension whiteList : "+ printformatW +"\n file-managing-whiteList : "+ printfilefuncW +"\n upload-func-whiteList : "+ printupW +"\n upload-form-whiteList : "+ ptintupformW +"\n === \n ")
-    checkfile(directory,False,internal)
-    time.sleep(1)
-    num += 1
 
+def bashexec(command):  # executing bash commands and Do Not return that outputs
+    process = subprocess.Popen(command.split())
+    if process:
+        return True
+    else:
+        return False
+
+
+def bashoutput(bashc):  # executing bash commands and return that outputs
+    basherr = r"(\/bin\/sh: [0-9]*: [a-zA-Z0-9 !@#$%^&*()\[\]{}\-=+<>\/?.,:;'\"\\|_]*: not found)"
+    bash = subprocess.getoutput(bashc)
+    if re.search(basherr, bash, re.IGNORECASE):  # check error existence
+        return False
+    else:
+        return bash
+
+
+def get_opt():  # get options from user keyboard and use above functions for handling those.
+    global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, green, red, normal, orange, white, emailV, usern, pasw, dest
+    config_path = "mal_config.conf"  # config path for saving/loading options
+    optnum = input(" %sAvailable Options : \n 1- Add scanning directory (required) "  # get options from keyboard
+          "\n 2- Change internal directory check OPT (Default = OFF)"
+          " \n 3- Add files that has unsafe-functions to white list"
+          " \n 4- Add files that has upload-functions to white list"
+          " \n 5- Add files that has upload-forms to white list"
+          " \n 6- Add files that has file-managing-functions to white list"
+          " \n 7- Add files that has banned-extensions to white list"
+          " \n 8- Add Your gmail for sending and receiving emails"
+          " \n 9- (Save/Load) Configurations"
+          " \n 10- Start scanning in background"
+          " \n 11- Stop scanning "
+          " \n 12- Exit "
+          "\n %s-->%s" % (white,red,normal))
+    if optnum.isdigit():
+        optnum = int(optnum)
+    else:
+        print(" %s No Option found ! Please Enter an number \n %s" % (red, normal))
+        get_opt()
+    if optnum == 1:  # check submitted option
+        directory = input("%sEnter directory name (for current directory enter ' . ') \n %s-->%s " % (white, red, normal))
+        get_opt()
+    elif optnum == 2:
+        internal = input("%sCheck internal directory ? (y/n) \n %s-->%s " % (white, red, normal))
+        get_opt()
+    elif optnum == 3:
+        unsafef = input("%sEnter file(s) name : (separate each name with ' , ') \n %s-->%s " % (white, red, normal))
+        get_opt()
+    elif optnum == 4:
+        uploadfunc = input("%sEnter file(s) name : (separate each name with ' , ') \n %s-->%s " % (white, red, normal))
+        get_opt()
+    elif optnum == 5:
+        uploadform = input("%sEnter file(s) name : (separate each name with ' , ') \n %s-->%s " % (white, red, normal))
+        get_opt()
+    elif optnum == 6:
+        filemanage = input("%sEnter file(s) name : (separate each name with ' , ') \n %s-->%s " % (white, red, normal))
+        get_opt()
+    elif optnum == 7:
+        extensions = input("%sEnter file(s) name : (separate each name with ' , ') \n %s-->%s " % (white, red, normal))
+        get_opt()
+    elif optnum == 8:  # get email necessary informations
+        usern = input("Enter sender gmail username : \n %s-->%s " % (red, normal))
+        pasw = input("Enter sender gmail password : \n %s-->%s " % (red, normal))
+        dest = str(input("Enter receiver gmail name(s) : (separate each address with ' , ') \n %s-->%s " % (red, normal)))
+        subject = "Test Email"
+        msg = "This is a test mail for testing email sendig !"
+        print(" %s Sending ... \n %s" % (orange, normal))
+        if send_mail(usern, pasw, dest, subject, msg):
+            print(" %s Email Sent Successfully ! %s" % (orange, normal))
+            emailV = True
+            get_opt()
+        else:
+            print(" %s Error ! Please re enter Your informations or check your gmail settings ! %s" % (red, normal))
+            get_opt()
+    elif optnum == 9:
+        saveload = str(input(" %s1- Save current options \n 2- Load saved options \n %s-->%s " % (white, red, normal)))
+        if saveload.isdigit():
+            saveload = int(saveload)
+            if saveload == 1:
+                if saveopt(config_path):
+                    print("%s Configuration successfully saved ! %s" % (orange, normal))
+                    get_opt()
+                else:
+                    print("%s Error While saving configurations ! %s" % (red, normal))
+            elif saveload == 2:
+                if loadopt(config_path) == "OK":
+                    print("%s Script configuration loaded successfully ! %s" % (orange, normal))
+                    get_opt()
+                else:
+                    print("%s No configuration file found ! please save configs first ! %s" % (red, normal))
+                    get_opt()
+            else:
+                print("%s No option found ! please enter again ! %s" % (red, normal))
+                get_opt()
+        else:
+            print(" %s No Option found ! Please Enter an number \n %s" % (red, normal))
+            get_opt()
+
+    elif optnum == 10:  # collecting and fixing necessary information for start scanning
+        if directory == "":
+            print(" %s Please Define an directory for scan ! %s " % (red, normal))
+            get_opt()
+        if "y" in internal:
+            internal = "-i"
+        if unsafef != "":
+            unsafef = "-f %s" % unsafef
+        if uploadfunc != "":
+            uploadfunc = "-u %s" % uploadfunc
+        if uploadform != "":
+            uploadform = "-U %s" % uploadform
+        if filemanage != "":
+            filemanage = "-F %s" % filemanage
+        if extensions != "":
+            extensions = "-e %s" % extensions
+        if emailV:
+            email = "-E true -g %s -p %s -r %s" % (usern, pasw, dest)
+        else:
+            email = ""
+        if startapp(directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, email):
+            print(" %s Malware scanning started successfully ! \n Press Enter to continue %s" % (orange, normal))
+            get_opt()
+        else:
+            print("Error While starting scan :(")
+    elif optnum == 11:
+        if stopapp():
+            while stopapp():  # run that function until return false (there is no scanning proccess anymore)
+                pass
+            print(" %s Script Stopped successfully !%s" % (orange, normal))
+            get_opt()
+        else:
+            print(" %sError While stopping scan :(%s" % (red, normal))
+            get_opt()
+    elif optnum == 12:
+        sys.exit()
+    elif optnum == 85:
+        get_opt()
+    else:
+        print("No options found")
+        get_opt()
+get_opt()
