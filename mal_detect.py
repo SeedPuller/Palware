@@ -14,7 +14,7 @@ logging.basicConfig(filename="maldetect.log",level=logging.INFO)
 
 alfa = r"(alfa[_[a-z]+)|(_+z[a-zA-z0-9]+cg\()"
 
-base64 = r"(base64_[a-z]+\()"
+base64 = r"(base64_[a-z]+\()" # disabled
 
 unsafe_func = r"(ini_[s]*[g]*[et]*[a-z]*)|(eval\()|([a-z]*[_]*exe[c]*)|(system\()|(php_uname\()|(safe_mode)|([a-z]*passthru\()"
 
@@ -32,7 +32,7 @@ defacement = r"(hacked)|(bypass)|(shell)"
 
 otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
 
-formatallow = [".php",".jpg",".png",".mp4",".html",".htm",".jpeg",".txt",".css",".psd",".sql",".zip",".js",".doc",".mo",".po",".ttf",".pdf"]
+formatallow = [".php", ".jpg", ".png", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf"]
 
 editAbleF = [".php",".html",".htm",".txt",".js"]
 
@@ -49,6 +49,9 @@ email = False
 Ereceiver = []
 mailA = ""
 mailP = ""
+maldo = ""
+mal_move_dest = ""
+mal_execption = []
 #  white lists
 
 Funcwhitelist = []
@@ -61,7 +64,7 @@ filefuncWhitelist = []
 
 uploadFormWhitelist = []
 
-#functions
+# functions
 
 def send_mail(user,pasw,destination,subject,msg):
     if(type(destination) is not list):
@@ -122,26 +125,11 @@ def checkfile(dirs,hard,internal):
     if dirs == "":
         print("No directory defined")
         sys.exit()
-    global formatallow
-    global editAbleF
-    global alfa
-    global unsafe_func
-    global fupload
-    global weevely
-    global defacement
-    global otherScripts
-    global phpscript
-    global Funcwhitelist
-    global upWhitelist
-    global base64
-    global uploadForm
-    global symlink
-    global filefunc
-    global formatWhitelist
-    global filefuncWhitelist
-    global uploadFormWhitelist
-    global malicious_coding
+    global formatallow, editAbleF
+    global alfa, unsafe_func, fupload, weevely, defacement, otherScripts, phpscript, base64, symlink, filefunc, malicious_coding
+    global Funcwhitelist, upWhitelist, uploadForm, formatWhitelist, filefuncWhitelist, uploadFormWhitelist
     global email, mailA, mailP, Ereceiver
+    global maldo, mal_move_dest
     # detected malware names ...
     malware = []
     reason = []
@@ -188,8 +176,8 @@ def checkfile(dirs,hard,internal):
                     elif(regex(defacement,code,False) != False):
                         malware.append(item)
                         reason.append("DEFACE")
-                    elif(regex(base64,code,False) != False):
-                        malware.append(item)
+                    # elif(regex(base64,code,False) != False):
+                    #     malware.append(item)
                         reason.append("BASE64")
                     elif(regex(uploadForm,code,checkpass3) != False):
                         malware.append(item)
@@ -232,17 +220,23 @@ def checkfile(dirs,hard,internal):
     num = 0
     for malwares in malware:
         nowtime = time.asctime(time.localtime(time.time()))
-        fname = malwares.split("/")[-1]
-        os.rename(malwares, "mal/%s" % fname)
-        logging.info("%s - %s Has Been Detected for ' %s ' \n " % (nowtime, malwares, reason[num]))
-        if email:
-            send_mail(mailA, mailP, Ereceiver, "Malware Detected !", "%s - %s Has Been Detected for ' %s ' \n " % (nowtime, malwares, reason[num]))
-        num += 1
+        if maldo == "move":
+            fname = malwares.split("/")[-1]
+            os.rename(malwares, "%s/%s" % (mal_move_dest, fname))
+            logging.info("%s - %s Has Been Detected for ' %s ' \n " % (nowtime, malwares, reason[num]))
+            num += 1
+        else:
+            if malwares not in mal_execption:
+                logging.info("%s - %s Has Been Detected for ' %s ' \n " % (nowtime, malwares, reason[num]))
+                if email:
+                    send_mail(mailA, mailP, Ereceiver, "Malware Detected !", "%s - %s Has Been Detected for ' %s ' \n " % (nowtime, malwares, reason[num]))
+                mal_execption.append(malwares)
+                num += 1
 
 # handling arguments
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'd:f:e:F:u:U:E:g:p:r:i', ['directory=', 'function-whitelist=', 'extension-whitelist=', 'file-managing-whitelist=', 'upload-func-whitelist=', 'upload-form-whitelist=', "email", "gmailA=", "gmailp", "receiver", 'internal-check'])
+    opts, args = getopt.getopt(sys.argv[1:], 'd:f:e:F:u:U:E:g:p:r:m:M:i', ['directory=', 'function-whitelist=', 'extension-whitelist=', 'file-managing-whitelist=', 'upload-func-whitelist=', 'upload-form-whitelist=', "email", "gmailA=", "gmailp", "receiver", "maldo", "mal-move-dest", 'internal-check'])
 except getopt.GetoptError as e:
     print(e)
     sys.exit(2)
@@ -282,6 +276,10 @@ for opt, arg in opts:
         arg = arg.split(",")
         for cArg in arg:
             Ereceiver.append(cArg)
+    elif opt in ("-m", "--maldo"):
+        maldo = arg
+    elif opt in ("-M", "--mal-move-dest"):
+        mal_move_dest = arg
     else:
         print("ERR")
         sys.exit(2)
@@ -317,7 +315,7 @@ while True:  # run scanning function until the world exists !
     if num < 1:
         pass
         nowtime = time.asctime(time.localtime(time.time()))  # get now date and time for log just for first start
-        logging.info(" ==== \n" + nowtime + "- Started With These Args : \n directory : " + directory + " \n internal : " + printinternal + " \n function whiteList : " + printFuncW + " \n extension whiteList : " + printformatW + "\n file-managing-whiteList : " + printfilefuncW + "\n upload-func-whiteList : " + printupW + "\n upload-form-whiteList : " + ptintupformW + "\n === \n ")
+        logging.info(" ==== \n" + nowtime + "- Started With These Args : \n directory : " + directory + " \n internal : " + printinternal + " \n function whiteList : " + printFuncW + " \n extension whiteList : " + printformatW + "\n file-managing-whiteList : " + printfilefuncW + "\n upload-func-whiteList : " + printupW + "\n upload-form-whiteList : " + ptintupformW + "\n Do-with-malwares : " + maldo + "\n malware-move-dest :" + mal_move_dest + "=== \n ")
     checkfile(directory, False, internal)
     time.sleep(1)
     num += 1
