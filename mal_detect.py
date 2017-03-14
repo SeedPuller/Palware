@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+# ver 1.5
 import re
 import os
 import stat
@@ -8,13 +8,13 @@ import logging
 import sys
 import getopt
 import smtplib
-logging.basicConfig(filename="maldetect.log",level=logging.INFO)
+logging.basicConfig(filename="maldetect.log", level=logging.INFO)
 
 # regex patterns start
 
 alfa = r"(alfa[_[a-z]+)|(_+z[a-zA-z0-9]+cg\()"
 
-base64 = r"(base64_[a-z]+\()" # disabled
+base64 = r"(base64_[a-z]+\()"  # disabled
 
 unsafe_func = r"(ini_[s]*[g]*[et]*[a-z]*)|(eval\()|([a-z]*[_]*exe[c]*)|(system\()|(php_uname\()|(safe_mode)|([a-z]*passthru\()"
 
@@ -34,7 +34,7 @@ otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
 
 formatallow = [".php", ".jpg", ".png", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf"]
 
-editAbleF = [".php",".html",".htm",".txt",".js"]
+editAbleF = [".php", ".html", ".htm", ".txt", ".js"]
 
 phpscript = r"(<\?php[\s\S]*?>)"
 
@@ -66,13 +66,14 @@ uploadFormWhitelist = []
 
 # functions
 
-def send_mail(user,pasw,destination,subject,msg):
-    if(type(destination) is not list):
+
+def send_mail(user, pasw, destination, subject, msg):
+    if type(destination) is not list:
         destination = [destination]
         destination = ', '.join(destination)
     else:
         destination = ', '.join(destination)
-    message = "From: %s\n To: %s \n Subject: %s \n\n %s" % (user, destination, subject, msg)
+    message = "From: {0}\n To: {1} \n Subject: {2} \n\n {3}".format(user, destination, subject, msg)
     try:
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.ehlo()
@@ -84,28 +85,30 @@ def send_mail(user,pasw,destination,subject,msg):
     except:
         return False
 
-def regex(pattern,code,whitelist):
+
+def regex(pattern, code, whitelist):
     # check a regex with a exception
-    if(whitelist):
+    if whitelist:
         return False
-    if(re.search(pattern,code,re.IGNORECASE) != None):
+    if re.search(pattern, code, re.IGNORECASE) is not None:
         return True
     else:
         return False
 
 
-def listDir(dirs):
+def list_dir(dirs):
     # list of all dirs in a directory
 
-    Dirs = []
+    ldirs = []
 
-    for Dir in os.listdir(dirs):
-        Dir = os.path.join(dirs,Dir)
-        mode = os.stat(Dir)[stat.ST_MODE]
-        if(stat.S_ISDIR(mode)):
-            Dirs.append(Dir)
+    for ldir in os.listdir(dirs):
+        ldir = os.path.join(dirs, ldir)
+        mode = os.stat(ldir)[stat.ST_MODE]
+        if stat.S_ISDIR(mode):
+            ldirs.append(ldir)
 
-    return Dirs
+    return ldirs
+
 
 def listfile(dirs):
     # list all files in a directory
@@ -113,14 +116,15 @@ def listfile(dirs):
     files = []
 
     for item in os.listdir(dirs):
-        item = os.path.join(dirs,item)
+        item = os.path.join(dirs, item)
         mode = os.stat(item)[stat.ST_MODE]
-        if(stat.S_ISREG(mode)):
+        if stat.S_ISREG(mode):
             files.append(item)
 
     return files
 
-def checkfile(dirs,hard,internal):
+
+def checkfile(dirs, hard, internal):
     # check files for malwares
     if dirs == "":
         print("No directory defined")
@@ -144,92 +148,92 @@ def checkfile(dirs,hard,internal):
         if os.path.isfile(item):
             # check exceptions and white lists
 
-            if(item in Funcwhitelist):
+            if item in Funcwhitelist:
                 checkpass = True
-            if(item in upWhitelist):
+            if item in upWhitelist:
                 checkpass1 = True
-            if(item in filefuncWhitelist):
+            if item in filefuncWhitelist:
                 checkpass2 = True
-            if(item in uploadFormWhitelist):
+            if item in uploadFormWhitelist:
                 checkpass3 = True
 
                 # file infos - format
 
-            FileInfo = os.path.splitext(item)
-            fformat = FileInfo[1].lower()
-            if(fformat in formatallow):
-                if(fformat in editAbleF):
+            file_info = os.path.splitext(item)
+            fformat = file_info[1].lower()
+            if fformat in formatallow:
+                if fformat in editAbleF:
 
                     # open files and check regexes
 
-                    check = open(item,"r",errors="ignore")
+                    check = open(item, "r", errors="ignore")
                     code = check.read()
-                    if(regex(alfa,code,False) != False):
-                         malware.append(item)
-                         reason.append("ALFA-SHELL")
-                    elif(regex(unsafe_func,code,checkpass) != False):
-                         malware.append(item)
-                         reason.append("UNSAFE-FUNC")
-                    elif(regex(fupload,code,checkpass1) != False):
-                         malware.append(item)
-                         reason.append("UPLOAD-FUNC")
-                    elif(regex(defacement,code,False) != False):
+                    if regex(alfa, code, False):
+                        malware.append(item)
+                        reason.append("ALFA-SHELL")
+                    elif regex(unsafe_func, code, checkpass):
+                        malware.append(item)
+                        reason.append("UNSAFE-FUNC")
+                    elif regex(fupload, code, checkpass1):
+                        malware.append(item)
+                        reason.append("UPLOAD-FUNC")
+                    elif regex(defacement, code, False):
                         malware.append(item)
                         reason.append("DEFACE")
                     # elif(regex(base64,code,False) != False):
                     #     malware.append(item)
-                        reason.append("BASE64")
-                    elif(regex(uploadForm,code,checkpass3) != False):
+                    #    reason.append("BASE64")
+                    elif regex(uploadForm, code, checkpass3):
                         malware.append(item)
                         reason.append("UPLOAD-FORM")
-                    elif(regex(symlink,code,False) != False):
+                    elif regex(symlink, code, False):
                         malware.append(item)
                         reason.append("SYMLINK")
-                    elif(regex(filefunc,code,checkpass2) != False):
+                    elif regex(filefunc, code, checkpass2):
                         malware.append(item)
                         reason.append("FILE-MANAGE-FUNC")
-                    elif(regex(malicious_coding,code,False) != False):
+                    elif regex(malicious_coding, code, False):
                         malware.append(item)
                         reason.append("MALICIOUS-CODING")
-                    elif(regex(otherScripts,code,False) != False):
+                    elif regex(otherScripts, code, False):
                         malware.append(item)
                         reason.append("SCRIPTING")
-                    elif(hard == True and regex(weevely,code,False) != False ):
+                    elif hard and regex(weevely, code, False):
                         malware.append(item)
                         reason.append("WEEVELY")
 
                     check.close()
                 else:
-                   check = open(item, "r", errors="ignore")
-                   code = check.read()
-                   if(regex(phpscript,code,False) != False):
+                    check = open(item, "r", errors="ignore")
+                    code = check.read()
+                    if regex(phpscript, code, False):
                         malware.append(item)
                         reason.append("PHP-IN-OTHER-FORMAT")
-                   elif(regex(defacement,code,False) != False):
+                    elif regex(defacement, code, False):
                         malware.append(item)
                         reason.append("DEFACE-IN-OTHER-FORMAT")
-                   check.close()
+                    check.close()
             else:
-                if(item not in formatWhitelist):
+                if item not in formatWhitelist:
                     malware.append(item)
                     reason.append("FORMAT")
 
-    if internal == True:
-        for eachDir in listDir(dirs):
+    if internal:
+        for eachDir in list_dir(dirs):
             checkfile(eachDir, hard, "y")
     num = 0
     for malwares in malware:
         nowtime = time.asctime(time.localtime(time.time()))
         if maldo == "move":
             fname = malwares.split("/")[-1]
-            os.rename(malwares, "%s/%s" % (mal_move_dest, fname))
-            logging.info("%s - %s Has Been Detected for ' %s ' \n " % (nowtime, malwares, reason[num]))
+            os.rename(malwares, "{0}/{1}".format(mal_move_dest, fname))
+            logging.info("{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reason[num]))
             num += 1
         else:
             if malwares not in mal_execption:
-                logging.info("%s - %s Has Been Detected for ' %s ' \n " % (nowtime, malwares, reason[num]))
+                logging.info("{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reason[num]))
                 if email:
-                    send_mail(mailA, mailP, Ereceiver, "Malware Detected !", "%s - %s Has Been Detected for ' %s ' \n " % (nowtime, malwares, reason[num]))
+                    send_mail(mailA, mailP, Ereceiver, "Malware Detected !", "{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reason[num]))
                 mal_execption.append(malwares)
                 num += 1
 
