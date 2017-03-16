@@ -32,7 +32,7 @@ defacement = r"(hacked)|(bypass)|(shell)"
 
 otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
 
-formatallow = [".php", ".jpg", ".png", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf"]
+formatallow = [".php", ".jpg", ".png", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf", ".gif"]
 
 editAbleF = [".php", ".html", ".htm", ".txt", ".js"]
 
