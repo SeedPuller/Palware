@@ -16,7 +16,7 @@ alfa = r"(alfa[_[a-z]+)|(_+z[a-zA-z0-9]+cg\()"
 
 base64 = r"(base64_[a-z]+\()"  # disabled
 
-unsafe_func = r"(ini_[s]*[g]*[et]*[a-z]*)|(eval\()|([a-z]*[_]*exe[c]*)|(system\()|(php_uname\()|(safe_mode)|([a-z]*passthru\()"
+unsafe_func = r"(ini_[s]*[g]*[et]*[a-z]*\()|(eval\()|([a-z]*[_]*exe[c]*\()|(system\()|(safe_mode)|([a-z]*passthru\()"
 
 fupload = r"(copy\()|(move_uploaded_file)"
 
@@ -28,17 +28,17 @@ filefunc = r"(chmod\()|(unlink\()|(rmdir\()|(rename\()"
 
 weevely = r"([b][a-zA-z0-9_\-|{}!%\^&@\*+]*[d]*[e]{1}\()"
 
-defacement = r"(hacked)|(bypass)|(shell)"
+defacement = r"(hacked)|(bypassed)"
 
 otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
 
-formatallow = [".php", ".jpg", ".png", ".gif", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf", ".eot", ".xml", ".svg", ".woff"]
+formatallow = [".php", ".jpg", ".png", ".gif", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf", ".eot", ".xml", ".svg", ".woff", ".dist", ".ini", ".sys.ini", ".min.js", ".json", ".swf", ".xap", ".less", ".ico", ".otf"]
 
 editAbleF = [".php"]
 
 phpscript = r"(<\?php[\s\S]*?>)"
 
-malicious_coding = r"(\$[a-z-A-Z0-9_]*\()|(create_function\()"
+malicious_coding = r"(\$[a-z-A-Z0-9_]+\()|(create_function\()"
 
 # regex patterns end
 
@@ -135,8 +135,7 @@ def checkfile(dirs, hard, internal):
     global email, mailA, mailP, Ereceiver
     global maldo, mal_move_dest
     # detected malware names ...
-    malware = []
-    reason = []
+    malware = {}
 
     files = listfile(dirs)
     checkpass = False
@@ -169,73 +168,59 @@ def checkfile(dirs, hard, internal):
                     check = open(item, "r", errors="ignore")
                     code = check.read()
                     if regex(alfa, code, False):
-                        malware.append(item)
-                        reason.append("ALFA-SHELL")
+                        malware[item] = "ALFA-SHELL"
                     elif regex(unsafe_func, code, checkpass):
-                        malware.append(item)
-                        reason.append("UNSAFE-FUNC")
+                        malware[item] = "UNSAFE-FUNC"
                     elif regex(fupload, code, checkpass1):
-                        malware.append(item)
-                        reason.append("UPLOAD-FUNC")
+                        malware[item] = "UPLOAD-FUNC"
                     elif regex(defacement, code, False):
-                        malware.append(item)
-                        reason.append("DEFACE")
+                        malware[item] = "DEFACE"
                     # elif(regex(base64,code,False) != False):
                     #     malware.append(item)
                     #    reason.append("BASE64")
                     elif regex(uploadForm, code, checkpass3):
-                        malware.append(item)
-                        reason.append("UPLOAD-FORM")
+                        malware[item] = "UPLOAD-FORM"
                     elif regex(symlink, code, False):
-                        malware.append(item)
-                        reason.append("SYMLINK")
+                        malware[item] = "SYMLINK"
                     elif regex(filefunc, code, checkpass2):
-                        malware.append(item)
-                        reason.append("FILE-MANAGE-FUNC")
+                        malware[item] = "FILE-MANAGE-FUNC"
                     elif regex(malicious_coding, code, False):
-                        malware.append(item)
-                        reason.append("MALICIOUS-CODING")
+                        malware[item] = "MALICIOUS-CODING"
                     elif regex(otherScripts, code, False):
-                        malware.append(item)
-                        reason.append("SCRIPTING")
+                        malware[item] = "SCRIPTING"
                     elif hard and regex(weevely, code, False):
-                        malware.append(item)
-                        reason.append("WEEVELY")
+                        malware[item] = "WEEVELY"
 
                     check.close()
                 else:
                     check = open(item, "r", errors="ignore")
                     code = check.read()
                     if regex(phpscript, code, False):
-                        malware.append(item)
-                        reason.append("PHP-IN-OTHER-FORMAT")
+                        malware[item] = "PHP-IN-OTHER-FORMAT"
                     elif regex(defacement, code, False):
-                        malware.append(item)
-                        reason.append("DEFACE-IN-OTHER-FORMAT")
+                        malware[item] = "DEFACE-IN-OTHER-FORMAT"
                     check.close()
             else:
                 if item not in formatWhitelist:
-                    malware.append(item)
-                    reason.append("FORMAT")
+                        malware[item] = "FORMAT"
 
     if internal:
         for eachDir in list_dir(dirs):
             checkfile(eachDir, hard, "y")
     num = 0
-    for malwares in malware:
+    for malwares,reasons in malware.items():
+        num += 1
         nowtime = time.asctime(time.localtime(time.time()))
         if maldo == "move":
             fname = malwares.split("/")[-1]
             os.rename(malwares, "{0}/{1}".format(mal_move_dest, fname))
-            logging.info("{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reason[num]))
-            num += 1
+            logging.info("{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reasons))
         else:
             if malwares not in mal_execption:
-                logging.info("{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reason[num]))
+                logging.info("{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reasons))
                 if email:
-                    send_mail(mailA, mailP, Ereceiver, "Malware Detected !", "{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reason[num]))
+                    send_mail(mailA, mailP, Ereceiver, "Malware Detected !", "{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malwares, reasons))
                 mal_execption.append(malwares)
-                num += 1
 
 # handling arguments
 
