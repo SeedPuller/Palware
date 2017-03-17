@@ -32,9 +32,9 @@ defacement = r"(hacked)|(bypass)|(shell)"
 
 otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
 
-formatallow = [".php", ".jpg", ".png", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf", ".gif"]
+formatallow = [".php", ".jpg", ".png", ".gif", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf", ".eot", ".xml", ".svg", ".woff"]
 
-editAbleF = [".php", ".html", ".htm", ".txt", ".js"]
+editAbleF = [".php"]
 
 phpscript = r"(<\?php[\s\S]*?>)"
 
@@ -240,7 +240,7 @@ def checkfile(dirs, hard, internal):
 # handling arguments
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'd:f:e:F:u:U:E:g:p:r:m:M:i', ['directory=', 'function-whitelist=', 'extension-whitelist=', 'file-managing-whitelist=', 'upload-func-whitelist=', 'upload-form-whitelist=', "email", "gmailA=", "gmailp", "receiver", "maldo", "mal-move-dest", 'internal-check'])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'd:f:e:F:u:U:E:g:p:r:m:M:i', ['directory=', 'function-whitelist=', 'extension-whitelist=', 'file-managing-whitelist=', 'upload-func-whitelist=', 'upload-form-whitelist=', "email", "gmailA=", "gmailp", "receiver", "maldo", "mal-move-dest", 'internal-check'])
 except getopt.GetoptError as e:
     print(e)
     sys.exit(2)
@@ -248,6 +248,9 @@ except getopt.GetoptError as e:
 for opt, arg in opts:
     if opt in ('-d', '--directory'):
         directory = arg
+        if not os.path.exists(directory):
+            logging.info("\n ### No such directory !!!!! script killed ! - {0} ###  \n".format(directory))
+            sys.exit()
     elif opt in ('-i', '--internal-check'):
         internal = True
     elif opt in ('-f', '--function-whitelist'):
@@ -319,7 +322,7 @@ while True:  # run scanning function until the world exists !
     if num < 1:
         pass
         nowtime = time.asctime(time.localtime(time.time()))  # get now date and time for log just for first start
-        logging.info(" ==== \n" + nowtime + "- Started With These Args : \n directory : " + directory + " \n internal : " + printinternal + " \n function whiteList : " + printFuncW + " \n extension whiteList : " + printformatW + "\n file-managing-whiteList : " + printfilefuncW + "\n upload-func-whiteList : " + printupW + "\n upload-form-whiteList : " + ptintupformW + "\n Do-with-malwares : " + maldo + "\n malware-move-dest :" + mal_move_dest + "=== \n ")
+        logging.info(" \n ==== \n" + nowtime + "- Started With These Args : \n directory : " + directory + " \n internal : " + printinternal + " \n function whiteList : " + printFuncW + " \n extension whiteList : " + printformatW + "\n file-managing-whiteList : " + printfilefuncW + "\n upload-func-whiteList : " + printupW + "\n upload-form-whiteList : " + ptintupformW + "\n Do-with-malwares : " + maldo + "\n malware-move-dest :" + mal_move_dest + "\n === \n ")
     checkfile(directory, False, internal)
     time.sleep(1)
     num += 1
