@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# ver 1.5
+# ver 1.6
 import re
 import os
 import stat
