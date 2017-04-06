@@ -9,4 +9,4 @@
     - ``` sudo chmod +x palware.sh;./palware.sh ```
 
 # Contact Me 
-- Help Me to make this script better : SeedPuller@gmail.com
+- Help Me To Improve : SeedPuller@gmail.com
