@@ -239,7 +239,7 @@ def get_opt():  # get options from user keyboard and use above functions for han
             else:
                 print(" {0}Error While stopping scan :({1}".format(colors["r"], colors["n"]))
         elif optnum == 8:
-            print("{0} Coded {1} By Mad Ant - SeedPuller@gmail.com {2} \n Special Thanks to my dear friend {3}Bl4ck MohajeM {4}\n Thanks to all my friends who helped me and didn't in this project .{5}".format(colors["o"], colors["r"], colors["o"], colors["r"], colors["o"], colors["n"]))
+            print("{0} Coded {1} By Mad Ant - SeedPuller@gmail.com {2} \n Special Thanks to my dear friend {3}Bl4ck MohajeM {4}\n Thanks to all my friends who helped me and who didnt.{5}".format(colors["o"], colors["r"], colors["o"], colors["r"], colors["o"], colors["n"]))
             time.sleep(2)
         elif optnum == 9:
             break
