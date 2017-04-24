@@ -1,11 +1,14 @@
 # About
-- This Malware Detector can be useful to finding web malwares that includes WebShellers , Backdoors and etc.
+- Palware is a threat finder wich :
+    - Find and alert/block malicious files
+    - Monitor all executed commands then find and alert malicious commands (like reading passwd)
+    - Find and alert/block SQLI & XSS testing on website
 
 # Note 
 - For Sending email attention , you must turn on "Access for less secure apps" on your sender gmail : [HERE](https://www.google.com/settings/u/1/security/lesssecureapps) 
 
 # How-To
-- You Should Run palware.sh with root. otherwise, script wont work properly .
+- Run palware.sh with root. otherwise, script wont work properly .
     - ``` sudo chmod +x palware.sh;./palware.sh ```
 
 # Contact Me 
