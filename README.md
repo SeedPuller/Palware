@@ -1,6 +1,6 @@
 # About
 - Palware is a threat finder wich :
-    - Find and alert/block malicious files like Shellers , Backdoors and etc.
+    - Finds and alert/block malicious files like Shellers , Backdoors and etc.
     - Monitor all executed commands then find and alert malicious commands (like reading passwd)
     - Find and alert/block SQLI & XSS testing on website
 
