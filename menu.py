@@ -9,13 +9,9 @@ if not os.path.exists("inc/installed.txt"):
     sys.exit(1)
 colors = {"g": "\033[32m", "n": "\033[m", "r": "\033[31m", "w": "\033[37m", "o": "\033[33m"}
 print(colors["r"] + open("inc/banner.txt").read() + colors["n"])
-print(" %s [+]  Web Malware Scanner Ver 2\n\n%s" % (colors["g"], colors["n"]))
+print(" %s [+]  Web Malware Scanner Ver 2.1\n\n%s" % (colors["g"], colors["n"]))
+# vars
 directory = ""
-internal = ""
-unsafef = ""
-uploadfunc = ""
-uploadform = ""
-filemanage = ""
 extensions = ""
 emailV = False
 usern = ""
@@ -24,22 +20,23 @@ dest = ""
 maldo = "log"
 mal_move_dest = ""
 filename = "mal_detect.py"
+sqlxss = False
 # defining functions
 
 
 def saveopt(conf_path):  # saving options in 'conf_path'
-    global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, emailV, usern, pasw, dest, maldo, mal_move_dest
+    global sqlxss, directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, emailV, usern, pasw, dest, maldo, mal_move_dest
     if os.path.isfile(conf_path):
         os.remove(conf_path)  # if option has been exsits , remove it to save new options
     savefile = open(conf_path, "w")
-    if savefile.write("directory:{0}\nemailV:{1}\nusern:{2}\npasswd:{3}\ndest:{4}\nmaldo:{5}\nmal_move_dest:{6}".format(directory, emailV, usern, pasw, dest, maldo, mal_move_dest)):
+    if savefile.write("directory:{0}\nemailV:{1}\nusern:{2}\npasswd:{3}\ndest:{4}\nmaldo:{5}\nmal_move_dest:{6}\nsqlxss:{7}".format(directory, emailV, usern, pasw, dest, maldo, mal_move_dest, sqlxss)):
         return True
     else:
         return False
 
 
 def loadopt(conf_path):  # load options from 'conf_path'
-    global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, emailV, usern, pasw, dest, maldo, mal_move_dest
+    global sqlxss, directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, emailV, usern, pasw, dest, maldo, mal_move_dest
     if os.path.isfile(conf_path):
         loadfile = open(conf_path, "r")
         for lines in loadfile.readlines():  # check files content and take options
@@ -65,6 +62,11 @@ def loadopt(conf_path):  # load options from 'conf_path'
                 maldo = arg
             elif "mal_move_dest:" in lines:
                 mal_move_dest = arg
+            elif "sqlxss:" in lines:
+                if "False" in arg:
+                    sqlxss = False
+                else:
+                    sqlxss = True
         loadfile.close()
         return "OK"
 
@@ -91,9 +93,9 @@ def send_mail(user, paswd, destination, subject, msg):  # send mail function usi
         return False
 
 
-def startapp(folder, emil, mldo):  # start scanning in background with arguments . uses 'nohup' command
+def startapp(folder, emil, mldo, sql_xss):  # start scanning in background with arguments . uses 'nohup' command
     global filename
-    command = ["sudo","nohup","python3","{0}".format(filename),"{0}".format(folder),"{0}".format(emil),"{0}".format(mldo),"&"]
+    command = ["sudo","nohup","python3",str(filename),str(folder),str(emil),str(mldo),str(sql_xss), "&"]
     if subprocess.Popen(command):
         return True
     else:
@@ -134,18 +136,19 @@ def bashoutput(bashc):  # executing bash commands and return that outputs
 
 
 def get_opt():  # get options from user keyboard and use above functions for handling those.
-    global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, colors, emailV, usern, pasw, dest, maldo, mal_move_dest
+    global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, colors, emailV, usern, pasw, dest, maldo, mal_move_dest, sqlxss
     config_path = "inc/config.conf"  # config path for saving/loading options
     while True:
 
         optnum = input(" {0}Available Options : \n 1- Add scanning directory (required) "  # get options from keyboard
               "\n 2- Add Your gmail for sending and receiving emails"
               "\n 3- What should i do with malwares ? (Default = Just Logging)"
-              "\n 4- (Save/Load) Configurations"
-              "\n 5- Start scanning in background"
-              "\n 6- Stop scanning "
-              "\n 7- Credits "
-              "\n 8- Exit "
+              "\n 4- SQL/XSS scanning (Default = Disable)"
+              "\n 5- (Save/Load) Configurations"
+              "\n 6- Start scanning in background"
+              "\n 7- Stop scanning "
+              "\n 8- Credits "
+              "\n 9- Exit "
               "\n {1}-->{2}".format(colors["w"], colors["r"], colors["n"]))
         if optnum.isdigit():
             optnum = int(optnum)
@@ -154,7 +157,7 @@ def get_opt():  # get options from user keyboard and use above functions for han
         if optnum == 1:  # check submitted option
             directory = input("{0}Enter directory name (for current directory enter ' . ') \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
             if not os.path.exists(directory):
-                print("{0} No Such Directory ! {1}".format(colors["r"],colors["n"]))
+                print("{0} No Such Directory ! {1}".format(colors["r"], colors["n"]))
                 directory = ""
         elif optnum == 2:  # get email necessary informations
             usern = input(" {0}Enter sender gmail username : \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
@@ -165,6 +168,7 @@ def get_opt():  # get options from user keyboard and use above functions for han
             print(" {0} Sending ... \n {1}".format(colors["o"], colors["n"]))
             if send_mail(usern, pasw, dest, subject, msg):
                 print(" {0} Email Sent Successfully ! {1}".format(colors["o"], colors["n"]))
+                open("inc/mail.txt", "w").write("{0}:{1}\n{2}".format(usern, pasw, dest))
                 emailV = True
             else:
                 print(" {0} Error ! Please re enter Your informations or check your gmail settings ! {1}".format(colors["r"], colors["n"]))
@@ -182,6 +186,10 @@ def get_opt():  # get options from user keyboard and use above functions for han
             else:
                 print("{0} Please Enter A Valid Option !{1}".format(colors["r"], colors["n"]))
         elif optnum == 4:
+            sqlcheck = input("{0} Scanning for SQLI/XSS ? (y/n) \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+            if sqlcheck == "y":
+                sqlxss = True
+        elif optnum == 5:
             saveload = str(input(" {0}1- Save current options \n 2- Load saved options \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"])))
             if saveload.isdigit():
                 saveload = int(saveload)
@@ -200,25 +208,29 @@ def get_opt():  # get options from user keyboard and use above functions for han
             else:
                 print(" {0} No Option found ! Please Enter an number \n {1}".format(colors["r"], colors["n"]))
 
-        elif optnum == 5:  # collecting and fixing necessary information for start scanning and passing arguments
+        elif optnum == 6:  # collecting and fixing necessary information for start scanning and passing arguments
             if directory == "":
                 print(" {0} Please Define an directory for scan ! {1} ".format(colors["r"], colors["n"]))
             else:
                 directory = "-d{0}".format(directory)
                 if emailV:
-                    email = "-E true -g {0} -p {1} -r {2}".format(usern, pasw, dest)
+                    email = "-Etrue"
                 else:
                     email = ""
                 if maldo == "move":
-                    maldo = "-m {0} -M {1}".format(maldo, mal_move_dest)
+                    maldo = "-m{0} -M{1}".format(maldo, mal_move_dest)
                 else:
-                    maldo = "-m {0}".format(maldo)
-                if startapp(directory, email, maldo):
+                    maldo = "-m{0}".format(maldo)
+                if sqlxss:
+                    sqlxss = "-s"
+                else:
+                    sqlxss = ""
+                if startapp(directory, email, maldo, sqlxss):
                     print(" {0}\n ===\n Malware scanning started successfully !  \n ===\n{1}".format(colors["o"], colors["n"]))
                     time.sleep(2)
                 else:
                     print("{0} Error While starting scan :({1}".format(colors["r"], colors["n"]))
-        elif optnum == 6:
+        elif optnum == 7:
             if stopapp():
                 while stopapp():  # run that function until return false (there is no scanning proccess anymore)
                     pass
@@ -226,10 +238,10 @@ def get_opt():  # get options from user keyboard and use above functions for han
                 time.sleep(2)
             else:
                 print(" {0}Error While stopping scan :({1}".format(colors["r"], colors["n"]))
-        elif optnum == 7:
+        elif optnum == 8:
             print("{0} Coded {1} By Mad Ant - SeedPuller@gmail.com {2} \n Special Thanks to my dear friend {3}Bl4ck MohajeM {4}\n Thanks to all my friends who helped me and didn't in this project .{5}".format(colors["o"], colors["r"], colors["o"], colors["r"], colors["o"], colors["n"]))
             time.sleep(2)
-        elif optnum == 8:
+        elif optnum == 9:
             break
         else:
             print("No options found")
