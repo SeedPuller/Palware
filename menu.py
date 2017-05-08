@@ -9,7 +9,7 @@ if not os.path.exists("inc/installed.txt"):
     sys.exit(1)
 colors = {"g": "\033[32m", "n": "\033[m", "r": "\033[31m", "w": "\033[37m", "o": "\033[33m"}
 print(colors["r"] + open("inc/banner.txt").read() + colors["n"])
-print(" %s [+]  Web Malware Scanner Ver 2.1\n\n%s" % (colors["g"], colors["n"]))
+print(" %s [+]  Web Malware Scanner Ver 2.1.1\n\n%s" % (colors["g"], colors["n"]))
 # vars
 directory = ""
 extensions = ""
@@ -106,17 +106,24 @@ def stopapp():  # search proccesses and find scannings procces then kill them
     global filename
     regex = r"(root[\s]*[0-9]*[\s\S0-9]* -d)"
     psx = bashoutput("ps -A -f | grep \"sudo nohup python3 {0}\" " .format(filename))
+    inops = bashoutput("ps -A -f | grep \"inotifywait {0}\" ".format(filename))
     search = re.search(regex, psx, re.IGNORECASE)
     if search is not None:
         pid = int(search.group().split()[1])
+        inopid = int(inops.split()[1])
         kill = bashoutput("sudo kill {0}".format(pid))
-        if "No such process" not in kill:
+        inokill = bashoutput("sudo kill {0}".format(inopid))
+        if "No such process" not in kill or inokill:
             return True
         else:
             return False
     else:
-        return False
-
+        inopid = int(inops.split()[1])
+        inokill = bashoutput("sudo kill {0}".format(inopid))
+        if "No such process" not in inokill:
+            return True
+        else:
+            return False
 
 def bashexec(command):  # executing bash commands and Do Not return that outputs
     process = subprocess.getstatusoutput(command)
