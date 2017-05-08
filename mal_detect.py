@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# ver 2.1
+# ver 2.1.1
 import subprocess
 import re
 import os
@@ -59,6 +59,7 @@ email = False
 mal_move_dest = ""
 sqlxss = False
 nowtime = time.asctime(time.localtime(time.time()))
+mal_execpt = []
 # functions
 
 
@@ -95,15 +96,19 @@ def command_execute():  # check for malicious executed command and alert them
 
 
 def scan(directory):  # check file changing and scan every file changes like edit , creat and etc.
+    global mal_execpt
     if not bashexec("sudo inotifywait {0} -d -r -e moved_to,close_write,attrib -o filechangelog.txt".format(directory)):
         logging.info("!!! infowait starting Error !!!")
         sys.exit(1)
     filechngeread = open("/filechangelog.txt", "r").readlines()
     if len(filechngeread) > 0:
         for change in filechngeread:
-            cwd, event, filename = change.split()
-            checkfile("{0}/{1}".format(cwd, filename))
+            splitchange = change.split()
+            if len(splitchange) > 0:
+                cwd, event, filename = splitchange
+                checkfile("{0}/{1}".format(cwd, filename))
         open("/filechangelog.txt","w").write("")
+        mal_execpt = []
 
 def send_mail(user, pasw, destination, subject, msg):  # sendig mail
     if type(destination) is not list:
@@ -168,10 +173,13 @@ def alert(text):
 
 
 def checkfile(item):
+    global mal_execpt
     # check files for malwares
     if item == "":
         print("No directory defined")
         sys.exit()
+    if item in mal_execpt:
+        return False
     global formatallow, editAbleF
     global alfa, ini_pro, eval_pro, executions, php_uname, fupload, weevely, defacement, otherScripts, phpscript, base64, symlink, filefunc, malicious_coding
     global email
@@ -238,8 +246,10 @@ def checkfile(item):
             fname = os.path.basename(malware)
             os.rename(malware, "{0}/{1}".format(mal_move_dest, fname))
             alert("{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malware, reason))
+            mal_execpt.append(malware)
         else:
             alert("{0} - {1} Has Been Detected for ' {2} ' \n ".format(nowtime, malware, reason))
+            mal_execpt.append(malware)
 
 # handling arguments
 
