@@ -49,6 +49,10 @@ apachenormconf = re.sub(apacheconfre, " CustomLog ${APACHE_LOG_DIR}/access.log c
 open("/etc/apache2/sites-available/000-default.conf", "w").write(apachenormconf)
 apachesslconf = re.sub(apacheconfre, " CustomLog ${APACHE_LOG_DIR}/access.log combined\n            CustomLog /var/log/palware/apache2.log combined", apachesslconf,flags=re.IGNORECASE)
 open("/etc/apache2/sites-available/default-ssl.conf", "w").write(apachesslconf)
+
+if not os.path.exists("/etc/apache2/palwareconf"):
+    os.mkdir("/etc/apache2/palwareconf")
+
 if not bashexec("sudo service apache2 restart"):
     print("{0} [!] Installing faild ! Make sure you have installed apache or you have started this app with root perm !".format(colors["red"]))
     sys.exit(1)
