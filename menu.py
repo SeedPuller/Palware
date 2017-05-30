@@ -9,7 +9,7 @@ if not os.path.exists("inc/installed.txt"):
     sys.exit(1)
 colors = {"g": "\033[32m", "n": "\033[m", "r": "\033[31m", "w": "\033[37m", "o": "\033[33m"}
 print(colors["r"] + open("inc/banner.txt").read() + colors["n"])
-print(" %s [+]  Web Malware Scanner Ver 2.1.1\n\n%s" % (colors["g"], colors["n"]))
+print(" %s [+]  Web Malware Scanner Ver 2.1.2\n\n%s" % (colors["g"], colors["n"]))
 # vars
 directory = ""
 extensions = ""
@@ -152,10 +152,11 @@ def get_opt():  # get options from user keyboard and use above functions for han
               "\n 3- What should i do with malwares ? (Default = Just Logging)"
               "\n 4- SQL/XSS scanning (Default = Disable)"
               "\n 5- (Save/Load) Configurations"
-              "\n 6- Start scanning in background"
-              "\n 7- Stop scanning "
-              "\n 8- Credits "
-              "\n 9- Exit "
+              "\n 6- Ban Ip(s)"
+              "\n 7- Start scanning in background"
+              "\n 8- Stop scanning "
+              "\n 9- Credits "
+              "\n 10- Exit "
               "\n {1}-->{2}".format(colors["w"], colors["r"], colors["n"]))
         if optnum.isdigit():
             optnum = int(optnum)
@@ -215,7 +216,31 @@ def get_opt():  # get options from user keyboard and use above functions for han
             else:
                 print(" {0} No Option found ! Please Enter an number \n {1}".format(colors["r"], colors["n"]))
 
-        elif optnum == 6:  # collecting and fixing necessary information for start scanning and passing arguments
+        elif optnum == 6:
+            ips = input("{0} Enter ip(s) (use comma's for seprating ip's) . You can find suspicious ip's in : /var/log/palware/maldetect.log \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+            ips = str(ips).split(",")
+            if directory == "":
+                rootdir = input("{0} Please Enter your website directory \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+                if rootdir[-1] != "/":
+                    rootdir = rootdir + "/"
+                if os.path.exists(rootdir):
+                    apache2confline = open("inc/apache2.conf", "r").readline()
+                    apache2conf = open("inc/apache2.conf", "r").read()
+                    apache2confread = open("/etc/apache2/apache2.conf", "r").read().replace(apache2conf, "")
+                    apache2confrep = open("inc/apache2.conf", "r").read().replace(apache2confline, "<Directory {0}>\n".format(rootdir))
+                    open("/etc/apache2/apache2.conf", "w").write(apache2confread + "\n\n" + apache2confrep)
+                    ipss = "1"
+                    for ip in ips:
+                        if ipss == "1":
+                            ipss = "Require not ip " + ip
+                        else:
+                            ipss = ipss + "\n" + "Require not ip " + ip
+                    ipsread = open("/var/apache2/palwareconf/iplist.conf", "r").read()
+                    open("/var/apache2/palwareconf/iplist.conf", "w").write("/n" + ipsread)
+                    bashexec("sudo service apache2 reload")
+                else:
+                    print(" {0} Directory does not exists ! {1} ".format(colors["r"], colors["n"]))
+        elif optnum == 7:  # collecting and fixing necessary information for start scanning and passing arguments
             if directory == "":
                 print(" {0} Please Define an directory for scan ! {1} ".format(colors["r"], colors["n"]))
             else:
@@ -237,7 +262,7 @@ def get_opt():  # get options from user keyboard and use above functions for han
                     time.sleep(2)
                 else:
                     print("{0} Error While starting scan :({1}".format(colors["r"], colors["n"]))
-        elif optnum == 7:
+        elif optnum == 8:
             if stopapp():
                 while stopapp():  # run that function until return false (there is no scanning proccess anymore)
                     pass
@@ -245,10 +270,10 @@ def get_opt():  # get options from user keyboard and use above functions for han
                 time.sleep(2)
             else:
                 print(" {0}Error While stopping scan :({1}".format(colors["r"], colors["n"]))
-        elif optnum == 8:
+        elif optnum == 9:
             print("{0} Coded {1} By Mad Ant - SeedPuller@gmail.com {2} \n Special Thanks to my dear friend {3}Bl4ck MohajeM {4}\n Thanks to all my friends who helped me and who didnt.{5}".format(colors["o"], colors["r"], colors["o"], colors["r"], colors["o"], colors["n"]))
             time.sleep(2)
-        elif optnum == 9:
+        elif optnum == 10:
             break
         else:
             print("No options found")
