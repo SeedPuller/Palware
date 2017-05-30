@@ -10,6 +10,11 @@
 # How-To
 - Run palware.sh with root. otherwise, script wont work properly .
     - ``` sudo chmod +x palware.sh;./palware.sh ```
+# Comming Soon ...
+- Block suspicious ip adresses automatically
+- Support ReadHat based distro's
+- Recognize POST method SQL/XSS attacks
+- Add more CE patterns
 
 # Contact Me 
 - Help Me To Improve : SeedPuller@gmail.com
