@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# ver 2.1.1
+# ver 2.1.2
 import subprocess
 import re
 import os
