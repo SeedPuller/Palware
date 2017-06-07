@@ -9,7 +9,7 @@ if not os.path.exists("inc/installed.txt"):
     sys.exit(1)
 colors = {"g": "\033[32m", "n": "\033[m", "r": "\033[31m", "w": "\033[37m", "o": "\033[33m"}
 print(colors["r"] + open("inc/banner.txt").read() + colors["n"])
-print(" %s [+]  Web Malware Scanner Ver 2.1.2\n\n%s" % (colors["g"], colors["n"]))
+print(" %s [+]  Web Malware Scanner Ver 2.2\n\n%s" % (colors["g"], colors["n"]))
 # vars
 directory = ""
 extensions = ""
