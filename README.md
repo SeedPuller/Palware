@@ -12,6 +12,9 @@
 # How-To
 - Run palware.sh with root. otherwise, script wont work properly .
     - ``` sudo chmod +x palware.sh;./palware.sh ```
+- To update your app manually : 
+    - Remove installed.txt from "inc" folder
+    - Run palware.sh with root
 
 # Comming Soon ...
 - Support ReadHat based distro's
