@@ -21,6 +21,9 @@ maldo = "log"
 mal_move_dest = ""
 filename = "mal_detect.py"
 sqlxss = False
+attack_do = ""
+iplistpath = "/etc/apache2/palwareconf/iplist.conf"
+apache2confpath = "/etc/apache2/apache2.conf"
 # defining functions
 
 
@@ -93,9 +96,9 @@ def send_mail(user, paswd, destination, subject, msg):  # send mail function usi
         return False
 
 
-def startapp(folder, emil, mldo, sql_xss):  # start scanning in background with arguments . uses 'nohup' command
+def startapp(folder, emil, mldo, sql_xss, attc):  # start scanning in background with arguments . uses 'nohup' command
     global filename
-    command = ["sudo","nohup","python3",str(filename),str(folder),str(emil),str(mldo),str(sql_xss), "&"]
+    command = ["sudo","nohup","python3",str(filename),str(folder),str(emil),str(mldo),str(sql_xss), str(attc),"&"]
     if subprocess.Popen(command):
         return True
     else:
@@ -104,26 +107,29 @@ def startapp(folder, emil, mldo, sql_xss):  # start scanning in background with 
 
 def stopapp():  # search proccesses and find scannings procces then kill them
     global filename
-    regex = r"(root[\s]*[0-9]*[\s\S0-9]* -d)"
-    psx = bashoutput("ps -A -f | grep \"sudo nohup python3 {0}\" " .format(filename))
-    inops = bashoutput("ps -A -f | grep \"inotifywait {0}\" ".format(filename))
-    search = re.search(regex, psx, re.IGNORECASE)
-    if search is not None:
-        pid = int(search.group().split()[1])
-        inopid = int(inops.split()[1])
-        kill = bashoutput("sudo kill {0}".format(pid))
-        inokill = bashoutput("sudo kill {0}".format(inopid))
-        if "No such process" not in kill or inokill:
-            return True
-        else:
-            return False
-    else:
-        inopid = int(inops.split()[1])
-        inokill = bashoutput("sudo kill {0}".format(inopid))
-        if "No such process" not in inokill:
-            return True
-        else:
-            return False
+    ipx = bashoutput("ps -C \"python3 mal_detect.py\" ").split("\n")
+    inops = bashoutput("ps -C inotifywait").split("\n")
+    if len(ipx) > 1:
+        num1 = 0
+        for pi in ipx:
+            if num1 > 0:
+                pid = pi.split()[0]
+                subprocess.Popen(["sudo","kill",str(pid)])
+            else:
+                num1 += 1
+
+    if len(inops) > 1:
+        num2 = 0
+        for ino in inops:
+            if num2 > 0:
+                inopid = ino.split()[0]
+                subprocess.Popen(["sudo","kill",str(inopid)])
+            else:
+                num2 += 1
+    if num1 < 2 and num2 < 2:
+        return False
+    return True
+
 
 def bashexec(command):  # executing bash commands and Do Not return that outputs
     process = subprocess.getstatusoutput(command)
@@ -143,13 +149,14 @@ def bashoutput(bashc):  # executing bash commands and return that outputs
 
 
 def get_opt():  # get options from user keyboard and use above functions for handling those.
-    global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, colors, emailV, usern, pasw, dest, maldo, mal_move_dest, sqlxss
+    global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, colors, emailV, usern, pasw, dest, maldo, mal_move_dest, sqlxss, attack_do
+    global iplistpath, apache2confpath
     config_path = "inc/config.conf"  # config path for saving/loading options
     while True:
 
         optnum = input(" {0}Available Options : \n 1- Add scanning directory (required) "  # get options from keyboard
               "\n 2- Add Your gmail for sending and receiving emails"
-              "\n 3- What should i do with malwares ? (Default = Just Logging)"
+              "\n 3- What should i do with malwares/attacks ? (Default = Just Logging)"
               "\n 4- SQL/XSS scanning (Default = Disable)"
               "\n 5- (Save/Load) Configurations"
               "\n 6- Ban Ip(s)"
@@ -164,6 +171,8 @@ def get_opt():  # get options from user keyboard and use above functions for han
             print(" {0} No Option found ! Please Enter an number \n {1}".format(colors["r"], colors["n"]))
         if optnum == 1:  # check submitted option
             directory = input("{0}Enter directory name (for current directory enter ' . ') \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+            if directory[-1] != "/":
+                directory = directory + "/"
             if not os.path.exists(directory):
                 print("{0} No Such Directory ! {1}".format(colors["r"], colors["n"]))
                 directory = ""
@@ -181,16 +190,36 @@ def get_opt():  # get options from user keyboard and use above functions for han
             else:
                 print(" {0} Error ! Please re enter Your informations or check your gmail settings ! {1}".format(colors["r"], colors["n"]))
         elif optnum == 3:
-            domal = input("{0} 1- Move Malwares to another directory and save log/sendMail .\n 2- Do nothing against malwares and just save log/sendMail .\n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
-            if str(domal).isdigit():
-                domal = int(domal)
-                if domal == 1:
-                    mal_move_dest = str(input("{0} Please enter your directory (from this script directory) \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"])))
-                    maldo = "move"
-                elif domal == 2:
-                    maldo = "log"
+            type = input("{0} 1- Set this option for malware detection\n 2- set this option for SQLI/XSS attacks .\n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+            if int(type) == 1:
+                domal = input("{0} 1- Move Malwares to another directory and save log/sendMail .\n 2- Do nothing against malwares and just save log/sendMail .\n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+                if str(domal).isdigit():
+                    domal = int(domal)
+                    if domal == 1:
+                        mal_move_dest = str(input("{0} Please enter your directory (from this script directory) \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"])))
+                        maldo = "move"
+                    elif domal == 2:
+                        maldo = "log"
+                    else:
+                        pass
                 else:
-                    pass
+                    print("{0} Please Enter A Valid Option !{1}".format(colors["r"], colors["n"]))
+            elif int(type) == 2:
+                attdo = input("{0} 1- Just alert attacks\n 2- Block attacker ip(s) \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+                if int(attdo) == 1:
+                    print("{0} Done !\n {1}".format(colors["g"], colors["n"]))
+                elif int(attdo) == 2:
+                    rootdir = input("{0} Please Enter your website root directory \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+                    if os.path.exists(rootdir):
+                        apache2confline = open("inc/apache2.conf", "r").readline()
+                        apache2conf = open("inc/apache2.conf", "r").read()
+                        apache2confread = open(apache2confpath, "r").read().replace(apache2conf, "")
+                        apache2confrep = open("inc/apache2.conf", "r").read().replace(apache2confline, "<Directory {0}>\n".format(rootdir))
+                        open(apache2confpath, "w").write(apache2confread + "\n\n" + apache2confrep)
+                        open("inc/apache2.conf", "w").write(apache2confrep)
+                        attack_do = rootdir
+                        bashexec("sudo service apache2 reload")
+                        print("{0} Automatic ip blocker has been activated !\n {1}".format(colors["g"], colors["n"]))
             else:
                 print("{0} Please Enter A Valid Option !{1}".format(colors["r"], colors["n"]))
         elif optnum == 4:
@@ -220,23 +249,24 @@ def get_opt():  # get options from user keyboard and use above functions for han
             ips = input("{0} Enter ip(s) (use comma's for seprating ip's) . You can find suspicious ip's in : /var/log/palware/maldetect.log \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
             ips = str(ips).split(",")
             if directory == "":
-                rootdir = input("{0} Please Enter your website directory \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+                rootdir = input("{0} Please Enter your website root directory \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
                 if rootdir[-1] != "/":
                     rootdir = rootdir + "/"
                 if os.path.exists(rootdir):
                     apache2confline = open("inc/apache2.conf", "r").readline()
                     apache2conf = open("inc/apache2.conf", "r").read()
-                    apache2confread = open("/etc/apache2/apache2.conf", "r").read().replace(apache2conf, "")
+                    apache2confread = open(apache2confpath, "r").read().replace(apache2conf, "")
                     apache2confrep = open("inc/apache2.conf", "r").read().replace(apache2confline, "<Directory {0}>\n".format(rootdir))
-                    open("/etc/apache2/apache2.conf", "w").write(apache2confread + "\n\n" + apache2confrep)
+                    open(apache2confpath, "w").write(apache2confread + "\n\n" + apache2confrep)
+                    open("inc/apache2.conf", "w").write(apache2confrep)
                     ipss = "1"
                     for ip in ips:
                         if ipss == "1":
                             ipss = "Require not ip " + ip
                         else:
                             ipss = ipss + "\n" + "Require not ip " + ip
-                    ipsread = open("/var/apache2/palwareconf/iplist.conf", "r").read()
-                    open("/var/apache2/palwareconf/iplist.conf", "w").write("/n" + ipsread)
+                    ipsread = open(iplistpath, "r").read()
+                    open(iplistpath, "w").write(ipsread + "\n{0}".format(ipss))
                     bashexec("sudo service apache2 reload")
                 else:
                     print(" {0} Directory does not exists ! {1} ".format(colors["r"], colors["n"]))
@@ -257,15 +287,18 @@ def get_opt():  # get options from user keyboard and use above functions for han
                     sqlxss = "-s"
                 else:
                     sqlxss = ""
-                if startapp(directory, email, maldo, sqlxss):
+                if attack_do != "":
+                    attack_do = "-a{0}".format(attack_do)
+                open("/var/log/audit/audit.log", "w").write("")
+                open("/var/log/palware/apache2.log", "w").write("")
+                open("/var/log/palware/filechangelog.txt", "w").write("")
+                if startapp(directory, email, maldo, sqlxss, attack_do):
                     print(" {0}\n ===\n Malware scanning started successfully !  \n ===\n{1}".format(colors["o"], colors["n"]))
                     time.sleep(2)
                 else:
                     print("{0} Error While starting scan :({1}".format(colors["r"], colors["n"]))
         elif optnum == 8:
             if stopapp():
-                while stopapp():  # run that function until return false (there is no scanning proccess anymore)
-                    pass
                 print(" {0}===\n Script Stopped successfully !\n ===\n{1}".format(colors["o"], colors["n"]))
                 time.sleep(2)
             else:
