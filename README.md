@@ -12,10 +12,9 @@
     - ``` sudo chmod +x palware.sh;./palware.sh ```
 
 # Comming Soon ...
-- Block suspicious ip adresses automatically
 - Support ReadHat based distro's
 - Recognize POST method SQL/XSS attacks
-- Add more CE patterns
+- Add more patterns for executed commands 
 
 # Contact Me 
 - Help Me To Improve : SeedPuller@gmail.com
