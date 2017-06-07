@@ -1,3 +1,8 @@
+# 2.2
+Attacker(s) ip adress(s) will be blocked automatically ! 
+blocking ip(s) problem fixed
+application stopping problem fixed 
+XSS/SQLI multiple alert fixed
 # 2.1.2
 Now you can block ip adresses from application menu !
 # 2.1.1
