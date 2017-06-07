@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# ver 2.1.2
+# ver 2.2
 import subprocess
 import re
 import os
@@ -35,8 +35,6 @@ symlink = r"(sym[link]+)"
 
 filefunc = r"(chmod\()|(unlink\()|(rmdir\()|(rename\()"
 
-#weevely = r"([b][a-zA-z0-9_\-|{}!%\^&@\*+]*[d]*[e]{1}\()" # disabled
-
 defacement = r"(hacked)|(bypassed)"
 
 otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
@@ -60,7 +58,19 @@ mal_move_dest = ""
 sqlxss = False
 nowtime = time.asctime(time.localtime(time.time()))
 mal_execpt = []
+rootdir = ""
+reaload = 0
+iplistpath = "/etc/apache2/palwareconf/iplist.conf"
+filechangelogpath = "/var/log/palware/filechangelog.txt"
 # functions
+
+def banip(ip):
+    global reaload, iplistpath
+    ipsban = "Require not ip " + ip
+    ipsread = open(iplistpath, "r").read()
+    open(iplistpath, "w").write(ipsread + "\n{0}".format(ipsban))
+    alert("Ip : {0} Has been banned !".format(ip))
+    reaload = 1
 
 
 def bashoutput(bashc):  # executing bash commands and return that outputs
@@ -95,20 +105,29 @@ def command_execute():  # check for malicious executed command and alert them
     open("/var/log/audit/audit.log","w").write("")
 
 
-def scan(directory):  # check file changing and scan every file changes like edit , creat and etc.
-    global mal_execpt
-    if not bashexec("sudo inotifywait {0} -d -r -e moved_to,close_write,attrib -o filechangelog.txt".format(directory)):
-        logging.info("!!! infowait starting Error !!!")
-        sys.exit(1)
-    filechngeread = open("/filechangelog.txt", "r").readlines()
+def scan():  # check file changing and scan every file changes like edit , creat and etc.
+    global mal_execpt, filechangelogpath
+    filechngeread = open(filechangelogpath, "r").readlines()
     if len(filechngeread) > 0:
         for change in filechngeread:
             splitchange = change.split()
             if len(splitchange) > 0:
                 cwd, event, filename = splitchange
                 checkfile("{0}/{1}".format(cwd, filename))
-        open("/filechangelog.txt","w").write("")
+            else:
+                alert("Split error !")
+                sys.exit()
+        open(filechangelogpath, "w").write("")
         mal_execpt = []
+
+
+def runinotify(directory):
+    global filechangelogpath
+    if not bashexec("sudo inotifywait {0} -d -r -e moved_to,close_write,attrib -o {1}".format(directory, filechangelogpath)):
+        logging.info("!!! infowait starting Error !!!")
+        sys.exit(1)
+    return True
+
 
 def send_mail(user, pasw, destination, subject, msg):  # sendig mail
     if type(destination) is not list:
@@ -142,20 +161,39 @@ def regex(pattern,code,whitelist, ret=None):
 
 
 def sqlxsscheck():
-    global nowtime
+    global nowtime, rootdir
     apachelog = open("/var/log/palware/apache2.log", "r").readlines()
     if len(apachelog) > 0:
         xssre = r"(<[\s\S]*>)"
         sqlorderre = r"([order]*[group]*[+ ]*by[+ ]*[\d]*[-\#]*)"
         sqlunionre = r"(union[\s\S]*[+]*[all]*select)"
+        urlre = r"(\"[GET POST]+ [\s\S]* HTTP)"
+        att_execpt = []
         for log in apachelog:
-            url = urllib.parse.unquote(re.sub(log, "", log, flags=re.IGNORECASE))
-            if regex(xssre, url, False):
-                alert("{0} - XSS testing found  ! \n info(s) :  {1}".format(nowtime, url))
-            elif regex(sqlorderre, url, False):
-                alert("{0} - SQLI testing found  ! \n info(s) :  {1}".format(nowtime, url))
-            elif regex(sqlunionre, url, False):
-                alert("{0} - SQLI testing found  ! \n info(s) :  {1}".format(nowtime, url))
+            log = urllib.parse.unquote(log)
+            ip = log.split("-")[0]
+            if re.match(urlre, log, re.IGNORECASE) is not None:
+                url = re.match(urlre, log, re.IGNORECASE)
+            else:
+                url = ""
+            if regex(xssre, log, False):
+                if url not in att_execpt:
+                    alert("{0} - XSS testing found  ! \n info(s) :  {1}".format(nowtime, log))
+                    if rootdir != "":
+                        banip(ip)
+                    att_execpt.append(url)
+            elif regex(sqlorderre, log, False):
+                if url not in att_execpt:
+                    alert("{0} - SQLI testing found  ! \n info(s) :  {1}".format(nowtime, log))
+                    if rootdir != "":
+                        banip(ip)
+                    att_execpt.append(url)
+            elif regex(sqlunionre, log, False):
+                if url not in att_execpt:
+                    alert("{0} - SQLI testing found  ! \n info(s) :  {1}".format(nowtime, log))
+                    if rootdir != "":
+                        banip(ip)
+                    att_execpt.append(url)
         open("/var/log/palware/apache2.log", "w").write("")
 
 def alert(text):
@@ -254,7 +292,7 @@ def checkfile(item):
 # handling arguments
 
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], 'd:E:m:M:s', ['directory=',"email=", "maldo=", "mal-move-dest=","sqlxss",])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'd:E:m:M:a:s', ['directory=',"email=", "maldo=", "mal-move-dest=", "attack-do=", "sqlxss",])
 except getopt.GetoptError as e:
     print(e)
     sys.exit(2)
@@ -273,6 +311,8 @@ for opt, arg in opts:
         mal_move_dest = arg
     elif opt in ('-s', '--sqlxss'):
         sqlxss = True
+    elif opt in ('-a', '--attack-do'):
+        rootdir = arg
     else:
         print("ERR")
         sys.exit(2)
@@ -280,10 +320,14 @@ for opt, arg in opts:
 num = 0
 while True:  # run scanning functions until the world exists !
     if num < 1:
-        pass
         nowtime = time.asctime(time.localtime(time.time()))  # get now date and time for log just for first start
-        logging.info(" \n ==== \n" + nowtime + "- Started With These Args : \n directory : " + directory + "\n Do-with-malwares : " + maldo + "\n malware-move-dest :" + mal_move_dest + "\n === \n ")
-    scan(directory)
+        alert(" \n ==== \n" + nowtime + "- Started With These Args : \n directory : " + directory + "\n Do-with-malwares : " + maldo + "\n malware-move-dest :" + mal_move_dest + "\n === \n ")
+        runinotify(directory)
+    if reaload == 1:
+        if str(num/10).split(".")[1] == "0":
+            bashexec("sudo service apache2 reload")
+            reaload = 0
+    scan()
     command_execute()
     if sqlxss:
         sqlxsscheck()
