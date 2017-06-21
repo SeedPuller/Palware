@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# ver 2.2
+# ver 2.2.1
 import subprocess
 import re
 import os
@@ -62,6 +62,9 @@ rootdir = ""
 reaload = 0
 iplistpath = "/etc/apache2/palwareconf/iplist.conf"
 filechangelogpath = "/var/log/palware/filechangelog.txt"
+postlog = "/var/log/palware/post.log"
+getlog = "/var/log/palware/apache2.log"
+posts = False
 # functions
 
 def banip(ip):
@@ -160,9 +163,9 @@ def regex(pattern,code,whitelist, ret=None):
         return False
 
 
-def sqlxsscheck():
+def sqlxsscheck(post):
     global nowtime, rootdir
-    apachelog = open("/var/log/palware/apache2.log", "r").readlines()
+    apachelog = open(getlog, "r").readlines()
     if len(apachelog) > 0:
         xssre = r"(<[\s\S]*>)"
         sqlorderre = r"([order]*[group]*[+ ]*by[+ ]*[\d]*[-\#]*)"
@@ -194,7 +197,38 @@ def sqlxsscheck():
                     if rootdir != "":
                         banip(ip)
                     att_execpt.append(url)
-        open("/var/log/palware/apache2.log", "w").write("")
+        open(getlog, "w").write("")
+        if post:
+            apachepostlog = open(postlog, "r").readlines()
+            open(postlog, "w").write("")
+            datare = r"(data-HEAP\): [a-z0-9]*=)"
+            sqliorre = r"(\'[\);+ ]*or[\'\"]*[+ ]*[\'a-z0-9=\"]*)"
+            for plog in apachepostlog:
+                if regex(datare, plog, False) is None:
+                    pass
+                else:
+                    ip = plog[0:127].split()[10].replace("]", "").split(":")[0]
+                    if regex(xssre, plog, False):
+                        if url not in att_execpt:
+                            alert("{0} - XSS testing found  ! \n info(s) :  {1}".format(nowtime, plog))
+                            if rootdir != "":
+                                banip(ip)
+                    elif regex(sqlorderre, plog, False):
+                        if url not in att_execpt:
+                            alert("{0} - SQLI testing found  ! \n info(s) :  {1}".format(nowtime, plog))
+                            if rootdir != "":
+                                banip(ip)
+                    elif regex(sqlunionre, plog, False):
+                        if url not in att_execpt:
+                            alert("{0} - SQLI testing found  ! \n info(s) :  {1}".format(nowtime, plog))
+                            if rootdir != "":
+                                banip(ip)
+                    elif regex(sqliorre, plog, False):
+                        if url not in att_execpt:
+                            alert("{0} - SQLI testing found  ! \n info(s) :  {1}".format(nowtime, plog))
+                            if rootdir != "":
+                                banip(ip)
+
 
 def alert(text):
     global email
@@ -292,7 +326,7 @@ def checkfile(item):
 # handling arguments
 
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], 'd:E:m:M:a:s', ['directory=',"email=", "maldo=", "mal-move-dest=", "attack-do=", "sqlxss",])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'd:E:m:M:a:p:s', ['directory=',"email=", "maldo=", "mal-move-dest=", "attack-do=", "post", "sqlxss",])
 except getopt.GetoptError as e:
     print(e)
     sys.exit(2)
@@ -313,6 +347,8 @@ for opt, arg in opts:
         sqlxss = True
     elif opt in ('-a', '--attack-do'):
         rootdir = arg
+    elif opt in ('-p', '--post'):
+        posts = arg
     else:
         print("ERR")
         sys.exit(2)
@@ -330,6 +366,6 @@ while True:  # run scanning functions until the world exists !
     scan()
     command_execute()
     if sqlxss:
-        sqlxsscheck()
+        sqlxsscheck(posts)
     time.sleep(1)
     num += 1
