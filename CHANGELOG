@@ -1,3 +1,6 @@
+# 2.2.1
+from now , Palware alerts/blocks SQLI/XSS attacks from POST method !
+Application being faster by removing unusable operations .
 # 2.2
 Attacker(s) ip adress(s) will be blocked automatically ! 
 blocking ip(s) problem fixed
