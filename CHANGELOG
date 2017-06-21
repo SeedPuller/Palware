@@ -13,7 +13,7 @@ find & alert XSS/SQLI testing
 # 2.0
 now , executing malicious bash commands will be alerted .
 # 1.9
-mirror improved and some bug fixed
+UI improved and some bug fixed
 # 1.8 
 scanning structure changed . now its more useful
 # Ver 1.7
