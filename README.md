@@ -19,7 +19,6 @@
 # Comming Soon ...
 - Support ReadHat based distro's
 - Application automatic update
-- Recognize POST method SQL/XSS attacks
 - Add more patterns for executed commands 
 
 # Contact Me 
