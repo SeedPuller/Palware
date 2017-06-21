@@ -45,9 +45,9 @@ if not os.path.exists("/var/log/palware"):
 apacheconfre = r"(customlog [\s\S]+ combined)"
 apachenormconf = open("/etc/apache2/sites-available/000-default.conf", "r").read()
 apachesslconf = open("/etc/apache2/sites-available/default-ssl.conf", "r").read()
-apachenormconf = re.sub(apacheconfre, " CustomLog ${APACHE_LOG_DIR}/access.log combined\n           CustomLog /var/log/palware/apache2.log combined", apachenormconf,flags=re.IGNORECASE)
+apachenormconf = re.sub(apacheconfre, " CustomLog ${APACHE_LOG_DIR}/access.log combined\n           CustomLog /var/log/palware/apache2.log combined           ErrorLog /var/log/palware/post.log", apachenormconf,flags=re.IGNORECASE)
 open("/etc/apache2/sites-available/000-default.conf", "w").write(apachenormconf)
-apachesslconf = re.sub(apacheconfre, " CustomLog ${APACHE_LOG_DIR}/access.log combined\n            CustomLog /var/log/palware/apache2.log combined", apachesslconf,flags=re.IGNORECASE)
+apachesslconf = re.sub(apacheconfre, " CustomLog ${APACHE_LOG_DIR}/access.log combined\n            CustomLog /var/log/palware/apache2.log combined           ErrorLog /var/log/palware/post.log", apachesslconf,flags=re.IGNORECASE)
 open("/etc/apache2/sites-available/default-ssl.conf", "w").write(apachesslconf)
 
 if not os.path.exists("/etc/apache2/palwareconf"):
