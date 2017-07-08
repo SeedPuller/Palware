@@ -12,14 +12,8 @@
         - Requirements : ``` sudo apt -y install python3 ; sudo apt -y install git ```
         - Then :  ```git clone https://gitlab.com/MadAnt/palware.git ; cd palware ; sudo chmod +x palware.sh;./palware.sh ```
     - RedHat Based Distro(s). (Tested on CentOs)
-    - Requirements : ``` sudo yum -y install python3 ; sudo yum -y install gcc make ; sudo yum -y install git ```
-    - Then :  ```git clone https://gitlab.com/MadAnt/palware.git ; cd palware ; sudo chmod +x palware.sh;./palware.sh ```
-
-
-- To update your app manually : 
-    - Remove installed.txt from "inc" folder
-    - Run palware.sh with root
-
+        - Requirements : ``` sudo yum -y install python3 ; sudo yum -y install gcc make ; sudo yum -y install git ```
+        - Then :  ```git clone https://gitlab.com/MadAnt/palware.git ; cd palware ; sudo chmod +x palware.sh;./palware.sh ```
 
 # Note 
 - For Sending email attention , you must turn on "Access for less secure apps" on your sender gmail : [HERE](https://www.google.com/settings/u/1/security/lesssecureapps) 
