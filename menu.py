@@ -4,13 +4,26 @@ import time
 import smtplib
 import os
 import sys
+import platform
+
 # setting necessary vars
 if not os.path.exists("inc/installed.txt"):
     sys.exit(1)
+
 colors = {"g": "\033[32m", "n": "\033[m", "r": "\033[31m", "w": "\033[37m", "o": "\033[33m"}
 print(colors["r"] + open("inc/banner.txt").read() + colors["n"])
-print(" %s [+]  Web Threat Finder Version 2.2.1\n\n%s" % (colors["g"], colors["n"]))
+print(" %s [+]  Web Threat Finder Version 2.3.0\n\n%s" % (colors["g"], colors["n"]))
+
 # vars
+platf = platform.platform().lower()
+
+if "ubuntu" in platf:
+    apacheconfpath = "/etc/apache2"
+    apachename = "apache2"
+else:
+    apacheconfpath = "/etc/httpd/conf/"
+    apachename = "httpd"
+
 directory = ""
 extensions = ""
 emailV = False
@@ -23,8 +36,8 @@ filename = "mal_detect.py"
 sqlxss = False
 posts = False
 attack_do = ""
-iplistpath = "/etc/apache2/palwareconf/iplist.conf"
-apache2confpath = "/etc/apache2/apache2.conf"
+iplistpath = "{0}/palwareconf/iplist.conf".format(apacheconfpath)
+apache2confpath = "{0}/{1}.conf".format(apacheconfpath, apachename)
 # defining functions
 
 
@@ -84,7 +97,7 @@ def loadopt(conf_path):  # load options from 'conf_path'
         return False
 
 
-def send_mail(user, paswd, destination, subject, msg):  # send mail function using gmail
+def send_mail(user, paswd, destination, subject, msg):  # send mail function . using gmail
     if type(destination) is not list:
         destination = [destination]
         destination = ', '.join(destination)
@@ -112,7 +125,7 @@ def startapp(folder, emil, mldo, sql_xss, attc, post):  # start scanning in back
         return False
 
 
-def stopapp():  # search proccesses and find scannings procces then kill them
+def stopapp():  # search processes and find palware processes . then kill them
     global filename
     ipx = bashoutput("ps -C \"python3 mal_detect.py\" ").split("\n")
     inops = bashoutput("ps -C inotifywait").split("\n")
@@ -149,13 +162,13 @@ def bashexec(command):  # executing bash commands and Do Not return that outputs
 def bashoutput(bashc):  # executing bash commands and return that outputs
     basherr = r"(\/bin\/sh: [0-9]*: [a-zA-Z0-9 !@#$%^&*()\[\]{}\-=+<>\/?.,:;'\"\\|_]*: not found)"
     bash = subprocess.getoutput(bashc)
-    if re.search(basherr, bash, re.IGNORECASE):  # check error existence
+    if re.search(basherr, bash, re.IGNORECASE):  # checking error existence
         return False
     else:
         return bash
 
 
-def get_opt():  # get options from user keyboard and use above functions for handling those.
+def get_opt():  # get options from user keyboard and use above functions for handling inputs.
     global directory, internal, unsafef, uploadfunc, uploadform, filemanage, extensions, colors, emailV, usern, pasw, dest, maldo, mal_move_dest, sqlxss, attack_do, posts
     global iplistpath, apache2confpath
     config_path = "inc/config.conf"  # config path for saving/loading options
@@ -232,7 +245,7 @@ def get_opt():  # get options from user keyboard and use above functions for han
                             open(apache2confpath, "w").write(apache2confread + "\n\n" + apache2confrep)
                             open("inc/apache2.conf", "w").write(apache2confrep)
                             attack_do = rootdir
-                            bashexec("sudo service apache2 reload")
+                            bashexec("sudo service {0} reload".format(apachename))
                             print("{0} Automatic ip blocker has been activated !\n {1}".format(colors["g"], colors["n"]))
                 else:
                     print("{0} Please Enter A Valid Option !{1}".format(colors["r"], colors["n"]))
@@ -246,8 +259,11 @@ def get_opt():  # get options from user keyboard and use above functions for han
                     else:
                         open(apache2confpath, "w").write(apache2confr + "\nLogLevel dumpio:trace7\nDumpIOInput On")
                         posts = True
-                        bashexec("sudo service apache2 reload")
+                        bashexec("sudo service {0} reload".format(apachename))
                         print("{0} POST method requests monitoring activated !\n {1}".format(colors["g"], colors["n"]))
+                else:
+                    open(apache2confpath, "w").write(apache2confr.replace("LogLevel dumpio:trace7\nDumpIOInput On", ""))
+                    print("{0} POST method requests monitoring disabled !\n {1}".format(colors["g"], colors["n"]))
             else:
                 pass
         elif optnum == 2:
@@ -291,7 +307,7 @@ def get_opt():  # get options from user keyboard and use above functions for han
                             ipss = ipss + "\n" + "Require not ip " + ip
                     ipsread = open(iplistpath, "r").read()
                     open(iplistpath, "w").write(ipsread + "\n{0}".format(ipss))
-                    bashexec("sudo service apache2 reload")
+                    bashexec("sudo service {0} reload".format(apachename))
                 else:
                     print(" {0} Directory does not exists ! {1} ".format(colors["r"], colors["n"]))
         elif optnum == 4:  # collecting and fixing necessary information for start scanning and passing arguments
@@ -331,9 +347,9 @@ def get_opt():  # get options from user keyboard and use above functions for han
                 print(" {0}===\n Script Stopped successfully !\n ===\n{1}".format(colors["o"], colors["n"]))
                 time.sleep(2)
             else:
-                print(" {0}Error While stopping scan :({1}".format(colors["r"], colors["n"]))
+                print(" {0}No script is running !{1}".format(colors["r"], colors["n"]))
         elif optnum == 6:
-            print("{0} Coded {1} By Mad Ant - SeedPuller@gmail.com {2} \n Special Thanks to my dear friend {3}Bl4ck MohajeM {4}\n Thanks to all my friends who helped me and who did not.{5}".format(colors["o"], colors["r"], colors["o"], colors["r"], colors["o"], colors["n"]))
+            print("{0} Coded {1} By Mad Ant - SeedPuller@gmail.com {2} \n Special Thanks To My Dear Friend {3}Bl4ck MohajeM {4}\n Thanks To All Guys  Who Helped Me And Who Did Not.{5}".format(colors["o"], colors["r"], colors["o"], colors["r"], colors["o"], colors["n"]))
             time.sleep(2)
         elif optnum == 7:
             break
