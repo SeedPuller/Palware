@@ -8,10 +8,10 @@
 
 # How-To
 - Installation
-    - Debian Based Distro(s) . (Tested on Ubuntu)
+    - Debian Based Distro's . (Tested on Ubuntu)
         - Requirements : ``` sudo apt -y install python3 ; sudo apt -y install git ```
         - Install & Run :  ```git clone https://gitlab.com/MadAnt/palware.git ; cd palware ; sudo chmod +x palware.sh;./palware.sh ```
-    - RedHat Based Distro(s). (Tested on CentOs)
+    - RedHat Based Distro's. (Tested on CentOs)
         - Requirements : ```sudo yum -y install https://centos7.iuscommunity.org/ius-release.rpm ; sudo yum -y install python35u ; sudo yum -y install gcc make ; sudo yum -y install git ```
         - Install & Run :  ```git clone https://gitlab.com/MadAnt/palware.git ; cd palware ; sudo chmod +x palware.sh;./palware.sh ```
 
