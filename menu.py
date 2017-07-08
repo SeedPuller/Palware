@@ -118,7 +118,7 @@ def send_mail(user, paswd, destination, subject, msg):  # send mail function . u
 
 def startapp(folder, emil, mldo, sql_xss, attc, post):  # start scanning in background with arguments . uses 'nohup' command
     global filename
-    command = ["sudo","nohup","python3",str(filename),str(folder),str(emil),str(mldo),str(sql_xss), str(attc), str(post), "&"]
+    command = ["sudo","nohup","python3.5",str(filename),str(folder),str(emil),str(mldo),str(sql_xss), str(attc), str(post), "&"]
     if subprocess.Popen(command):
         return True
     else:
@@ -127,7 +127,7 @@ def startapp(folder, emil, mldo, sql_xss, attc, post):  # start scanning in back
 
 def stopapp():  # search processes and find palware processes . then kill them
     global filename
-    ipx = bashoutput("ps -C \"python3 mal_detect.py\" ").split("\n")
+    ipx = bashoutput("ps -C \"python3.5 mal_detect.py\" ").split("\n")
     inops = bashoutput("ps -C inotifywait").split("\n")
     if len(ipx) > 1:
         num1 = 0
