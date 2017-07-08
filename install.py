@@ -5,17 +5,6 @@ import re
 import platform
 
 
-"""
-"sudo yum -y install audit"
-sudo yum -y install gcc make
-sudo yum -y install git
-git clone https://github.com/rvoicilas/inotify-tools/
-./configure
-make
-sudo make install
-/etc/httpd/conf.d/vhost.conf
-
-"""
 
 if os.path.exists("inc/installed.txt"):
     sys.exit(1)
