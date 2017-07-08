@@ -3,6 +3,7 @@ Now , RedHat based distro's can use palware !
 POST requests monitoring problem fixed
 Installation problem fixed
 application running problem fixed
+file scanning crash fixed
 palware code is now more clear for another programmers
 # 2.2.1
 from now , Palware alerts/blocks SQLI/XSS attacks that sended from POST method !
