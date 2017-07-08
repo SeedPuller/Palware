@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# ver 2.2.1
+# ver 2.3.0
 import subprocess
 import re
 import os
@@ -9,48 +9,43 @@ import sys
 import getopt
 import smtplib
 import urllib.parse
+import platform
 logging.basicConfig(filename="/var/log/palware/maldetect.log", level=logging.INFO)
 
 # regex patterns start
 
-alfa = r"(alfa[_[a-z]+)|(_+z[a-zA-z0-9]+cg\()"
+REGEXES = {"ALFA-SHELL": r"(alfa[_[a-z]+)|(_+z[a-zA-z0-9]+cg\()",
+           "INI-PROCESS": r"(ini_[s]*[g]*[et]*[a-z]*\()",
+           "EVAL-PROCCES": r"(eval\()",
+           "COMMAND-EXECUTION": r"([a-z]*[_]*exe[c]*\()|(system\()|([a-z]*passthru\()",
+           "SUSPICIOUS-FUNC": r"(php_uname\()",
+           "UPLOAD": r"(copy\()|(move_uploaded_file\()",
+           "UPLOAD-FORM": r"(<form [\s\S]* enctype=[\S\s]*multipart\/form-data)|(<input [\s\S]*type=[\s\S]*file)",
+           "SYMLINK": r"(sym[link]+)",
+           "FILE-MANAGING-FUNC": r"(chmod\()|(unlink\()|(rmdir\()|(rename\()",
+           "DEFACEMENT": r"(hacked)|(bypassed)",
+           "SCRIPT-SIMILAR": r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)",
+           "PHP-IN-OTHER-FORMAT": r"(<\?php[\s\S]*?>)",
+           "MALICIOUS-CODING": r"(\$[a-z-A-Z0-9_]+\()|(create_function\()"
+           }
 
-#base64 = r"(base64_[a-z]+\()"  # disabled
+# regex patterns end
 
-#safe_mode = r"(safe_mode)" disabled
-
-ini_pro = r"(ini_[s]*[g]*[et]*[a-z]*\()"
-
-eval_pro = r"(eval\()"
-
-executions = r"([a-z]*[_]*exe[c]*\()|(system\()|([a-z]*passthru\()"
-
-php_uname = r"(php_uname\()"
-
-fupload = r"(copy\()|(move_uploaded_file\()"
-
-uploadForm = r"(<form [\s\S]* enctype=[\S\s]*multipart\/form-data)|(<input [\s\S]*type=[\s\S]*file)"
-
-symlink = r"(sym[link]+)"
-
-filefunc = r"(chmod\()|(unlink\()|(rmdir\()|(rename\()"
-
-defacement = r"(hacked)|(bypassed)"
-
-otherScripts = r"(#![\/a-zA-z0-9]*bin\/[a-zA-z0-9]*)"
+# Important Vars start
 
 formatallow = [".php", ".jpg", ".png", ".gif", ".mp4", ".html", ".htm", ".jpeg", ".txt", ".css", ".psd", ".sql", ".zip", ".js", ".doc", ".mo", ".po", ".ttf", ".pdf", ".eot", ".xml", ".svg", ".woff", ".dist", ".ini", ".sys.ini", ".min.js", ".json", ".swf", ".xap", ".less", ".ico", ".otf"]
 
 editAbleF = [".php"]
 
-phpscript = r"(<\?php[\s\S]*?>)"
+platf = platform.platform().lower()
 
-malicious_coding = r"(\$[a-z-A-Z0-9_]+\()|(create_function\()"
+if "ubuntu" in platf:
+    apacheconfpath = "/etc/apache2"
+    apachename = "apache2"
+else:
+    apacheconfpath = "/etc/httpd"
+    apachename = "httpd"
 
-
-# regex patterns end
-
-# Vars
 internal = False
 directory = ""
 email = False
@@ -60,17 +55,21 @@ nowtime = time.asctime(time.localtime(time.time()))
 mal_execpt = []
 rootdir = ""
 reaload = 0
-iplistpath = "/etc/apache2/palwareconf/iplist.conf"
+iplistpath = "{0}/palwareconf/iplist.conf".format(apacheconfpath)
 filechangelogpath = "/var/log/palware/filechangelog.txt"
 postlog = "/var/log/palware/post.log"
 getlog = "/var/log/palware/apache2.log"
 posts = False
-# functions
 
-def banip(ip):
+# Important Vars end
+
+# functions start
+
+
+def banip(ip):                     # Ban a ip address from apache configuration
     global reaload, iplistpath
     ipsban = "Require not ip " + ip
-    ipsread = open(iplistpath, "r").read()
+    ipsread = open(iplistpath, "r").read() # Banned-ip list
     open(iplistpath, "w").write(ipsread + "\n{0}".format(ipsban))
     alert("Ip : {0} Has been banned !".format(ip))
     reaload = 1
@@ -84,6 +83,7 @@ def bashoutput(bashc):  # executing bash commands and return that outputs
     else:
         return bash
 
+
 def bashexec(command):  # executing bash commands and Do Not return that outputs
     process = subprocess.getstatusoutput(command)
     if process[0] == 0:
@@ -91,40 +91,47 @@ def bashexec(command):  # executing bash commands and Do Not return that outputs
     else:
         return False
 
+
 def command_execute():  # check for malicious executed command and alert them
     global email, mailA, mailP, Ereceiver, nowtime
     commands_log = bashoutput("sudo ausearch -m EXECVE -ts {0}/{1}/{2} | grep 'type=EXECVE' ".format(nowtime[1],nowtime[2],nowtime[0]))
     listlog = commands_log.split("----")
-    # malicious commands
+    # malicious commands start
     cwdre = r"(cwd=[\s]*[\S]+\")"
     malre = r"(passwd|uname)"
-
+    # malicious commands end
     for command in listlog:
-        if regex(r"\b(uid=0)", command, False):
+        if regex(r"\b(uid=0)", command, False): # Root user is permitted to do anything
             continue
-        if regex(malre, command,False):
-            cwd = regex(cwdre, command, False,1)
+        if regex(malre, command,False): # Check for malicious command
+            cwd = regex(cwdre, command, False, 1)
             alert("[!] Malicious bash command executed on : {0}".format(cwd))
     open("/var/log/audit/audit.log","w").write("")
 
 
-def scan():  # check file changing and scan every file changes like edit , creat and etc.
+def scan():  # check file changing and scan every file events like editing , creating and etc.
     global mal_execpt, filechangelogpath
     filechngeread = open(filechangelogpath, "r").readlines()
     if len(filechngeread) > 0:
         for change in filechngeread:
-            splitchange = change.split()
-            if len(splitchange) > 0:
-                cwd, event, filename = splitchange
-                checkfile("{0}/{1}".format(cwd, filename))
-            else:
-                alert("Split error !")
-                sys.exit()
+            scancwd = change[0:(len(change)) - (change[::-1].find("/"))]
+            file_else = change[(len(change)) - (change[::-1].find("/") - 1):]
+            num3 = 0
+            scanname = ""
+            for val in file_else.split()[1:]:
+                if num3 == 0:
+                    scanname = val
+                else:
+                    scanname = scanname + " {0}".format(val)
+                num3 += 1
+
+        checkfile("{0}{1}".format(scancwd, scanname))
+
         open(filechangelogpath, "w").write("")
         mal_execpt = []
 
 
-def runinotify(directory):
+def runinotify(directory): # run inotify tools with some parameters
     global filechangelogpath
     if not bashexec("sudo inotifywait {0} -d -r -e moved_to,close_write,attrib -o {1}".format(directory, filechangelogpath)):
         logging.info("!!! infowait starting Error !!!")
@@ -132,7 +139,7 @@ def runinotify(directory):
     return True
 
 
-def send_mail(user, pasw, destination, subject, msg):  # sendig mail
+def send_mail(user, pasw, destination, subject, msg):  # sending Emails for alert
     if type(destination) is not list:
         destination = [destination]
         destination = ', '.join(destination)
@@ -151,22 +158,31 @@ def send_mail(user, pasw, destination, subject, msg):  # sendig mail
         return False
 
 
-def regex(pattern,code,whitelist, ret=None):
-    # check a regex with a exeption
-    if(whitelist):
+def regex(pattern,code,whitelist, ret=None, ignore=1):
+    # check a regex with a exception
+    if whitelist:
         return False
-    if(re.search(pattern,code,re.IGNORECASE) != None):
-        if ret != None:
-            return re.search(pattern,code,re.IGNORECASE).group(0)
-        return True
+    if ignore == 1:
+        if re.search(pattern,code,re.IGNORECASE) != None:
+            if ret != None:
+                return re.search(pattern, code, re.IGNORECASE).group(0)
+            return True
+        else:
+            return False
     else:
-        return False
+        if re.search(pattern,code) != None:
+            if ret != None:
+                return re.search(pattern, code).group(0)
+            return True
+        else:
+            return False
 
-
-def sqlxsscheck(post):
+def sqlxsscheck(post):   # Checking POST and GET requests for SQLI or XSS attacks
     global nowtime, rootdir
-    apachelog = open(getlog, "r").readlines()
+    apachelog = open(getlog, "r").readlines() # read GET requests log
     if len(apachelog) > 0:
+        # sqli and xss regexes
+
         xssre = r"(<[\s\S]*>)"
         sqlorderre = r"([order]*[group]*[+ ]*by[+ ]*[\d]*[-\#]*)"
         sqlunionre = r"(union[\s\S]*[+]*[all]*select)"
@@ -204,9 +220,8 @@ def sqlxsscheck(post):
             datare = r"(data-HEAP\): [a-z0-9]*=)"
             sqliorre = r"(\'[\);+ ]*or[\'\"]*[+ ]*[\'a-z0-9=\"]*)"
             for plog in apachepostlog:
-                if regex(datare, plog, False) is None:
-                    pass
-                else:
+                plog = urllib.parse.unquote(plog)
+                if regex(datare, plog, False):
                     ip = plog[0:127].split()[10].replace("]", "").split(":")[0]
                     if regex(xssre, plog, False):
                         if url not in att_execpt:
@@ -228,6 +243,7 @@ def sqlxsscheck(post):
                             alert("{0} - SQLI testing found  ! \n info(s) :  {1}".format(nowtime, plog))
                             if rootdir != "":
                                 banip(ip)
+
 
 
 def alert(text):
@@ -270,50 +286,22 @@ def checkfile(item):
 
             check = open(item, "r", errors="ignore")
             code = check.read()
-            if regex(alfa, code, False):
-                malwares[item] = "ALFA-SHELL"
-            elif regex(ini_pro, code, False):
-                malwares[item] = "INI-PROCCESS"
-            elif regex(eval_pro, code, False):
-                malwares[item] = "EVAL-PROCCES"
-            elif regex(executions, code, False):
-                malwares[item] = "COMMAND-EXECUTION"
-            elif regex(php_uname, code, False):
-                malwares[item] = "UNSAFE-FUNC"
-            elif regex(fupload, code, False):
-                malwares[item] = "UPLOAD-FUNC"
-            elif regex(defacement, code, False):
-                malwares[item] = "DEFACE"
-            elif regex(php_uname, code, False):
-                malwares[item] = "PHP_UNAME"
-            # elif(regex(base64,code,False) != False):
-            #    malwares[item] = "BASE64"
-            elif regex(uploadForm, code, False):
-                malwares[item] = "UPLOAD-FORM"
-            elif regex(symlink, code, False):
-                malwares[item] = "SYMLINK"
-            elif regex(filefunc, code, False):
-                malwares[item] = "FILE-MANAGE-FUNC"
-            elif regex(malicious_coding, code, False):
-                malwares[item] = "MALICIOUS-CODING"
-            elif regex(otherScripts, code, False):
-                malwares[item] = "SCRIPTING"
-            # elif hard and regex(weevely, code, False):
-            #     malwares[item] = "WEEVELY"
-
+            for reasons, reg in REGEXES.items():
+                if regex(reg, code, False):
+                    malwares[item] = reasons
             check.close()
         else:
             check = open(item, "r", errors="ignore")
             code = check.read()
-            if regex(phpscript, code, False):
+            if regex(REGEXES["PHP-IN-OTHER-FORMAT"], code, False):
                 malwares[item] = "PHP-IN-OTHER-FORMAT"
-            elif regex(defacement, code, False):
+            elif regex(REGEXES["DEFACEMENT"], code, False):
                 malwares[item] = "DEFACE-IN-OTHER-FORMAT"
             check.close()
     else:
-        malwares[item] = "FORMAT"
+        malwares[item] = "ILLEGAL-FORMAT"
 
-    for malware,reason in malwares.items():
+    for malware, reason in malwares.items():
         if maldo == "move":
             fname = os.path.basename(malware)
             os.rename(malware, "{0}/{1}".format(mal_move_dest, fname))
@@ -361,7 +349,7 @@ while True:  # run scanning functions until the world exists !
         runinotify(directory)
     if reaload == 1:
         if str(num/10).split(".")[1] == "0":
-            bashexec("sudo service apache2 reload")
+            bashexec("sudo service {0} reload".format(apachename))
             reaload = 0
     scan()
     command_execute()
