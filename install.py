@@ -5,7 +5,6 @@ import re
 import platform
 
 
-
 if os.path.exists("inc/installed.txt"):
     sys.exit(1)
 colors = {"green": "\033[32m", "normal": "\033[m", "red": "\033[31m", "white": "\033[37m", "orange": "\033[33m"}
@@ -34,7 +33,7 @@ else:
     auditd = "sudo yum -y install audit"
     apachename = "httpd"
 
-    vhostpath = input("{0} Please Enter your vhost config path . Leave this blank to use default value (Default = /etc/httpd/conf.d/vhost.conf) \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+    vhostpath = input("{0} Please Enter your vhost config path . Leave this blank to use default value (Default = /etc/httpd/conf.d/vhost.conf) \n {1}-->{2} ".format(colors["white"], colors["red"], colors["normal"]))
 
     if vhostpath == "":
         apachenormconf = open("/etc/httpd/conf.d/vhost.conf", "r").read()
@@ -82,7 +81,7 @@ auditconfedit = open("/etc/audit/audit.rules", "w").write(auditconf)
 print("{0} [!] Finishing ... \n {1}".format(colors["orange"], colors["normal"]))
 if not os.path.exists("/var/log/palware"):
     if not os.mkdir("/var/log/palware"):
-        print("{0} [!] Installing faild ! Please try again !".format(colors["red"]))
+        print("{0} [!] Installing faild ! Please try again ! {1}".format(colors["red"], colors["normal"]))
         sys.exit(1)
 
 #          ## adding necessary options to apache configurations
