@@ -12,7 +12,7 @@ if not os.path.exists("inc/installed.txt"):
 
 colors = {"g": "\033[32m", "n": "\033[m", "r": "\033[31m", "w": "\033[37m", "o": "\033[33m"}
 print(colors["r"] + open("inc/banner.txt").read() + colors["n"])
-print(" %s [+]  Web Threat Finder Version 2.3.0\n\n%s" % (colors["g"], colors["n"]))
+print(" %s [+]  Web Threat Finder Version 2.3.1\n\n%s" % (colors["g"], colors["n"]))
 
 # vars
 platf = platform.platform().lower()
@@ -186,20 +186,29 @@ def get_opt():  # get options from user keyboard and use above functions for han
         else:
             print(" {0} No Option found ! Please Enter an number \n {1}".format(colors["r"], colors["n"]))
         if optnum == 1:  # check submitted option
-            setnum = input("{0} 1- Add scanning directory (required) \n 2- SQLI/XSS scanning (Default = Disable)\n 3- Sending email for alerting (Default = Disable)\n 4- Select Reaction after threat(s) founding (Default = Just Alerting)\n 5- Monitoring POST method request(s)  \n {1}-->{2}".format(colors["w"], colors["r"], colors["n"]))
+            setnum = input("{0} 1- File(s) Watching(Default = Enable) \n 2- SQLI/XSS scanning (Default = Disable)\n 3- Sending email for alerting (Default = Disable)\n 4- Select Reaction after threat(s) founding (Default = Just Alerting)\n 5- Monitoring POST method request(s)  \n {1}-->{2}".format(colors["w"], colors["r"], colors["n"]))
             setnum = int(setnum)
             if setnum == 1:
-                directory = input("{0}Enter directory name (for current directory enter ' . ') \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
-                if directory[-1] != "/":
-                    directory = directory + "/"
-                if not os.path.exists(directory):
-                    print("{0} No Such Directory ! {1}".format(colors["r"], colors["n"]))
-                    directory = ""
+                scnum = input("{0} Enable file(s) watching (recommended) ? (y/n) \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+                if scnum == "y":
+                    directory = input("{0}Enter directory name (for current directory enter ' . ') \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
+                    if directory[-1] != "/":
+                        directory = directory + "/"
+                    print("{0} File watcher enabled ! {1}\n ".format(colors["g"], colors["n"]))
+                    if not os.path.exists(directory):
+                        print("{0} No Such Directory ! {1}".format(colors["r"], colors["n"]))
+                        directory = ""
+                else:
+                    directory = False
+                    print("{0} File watcher disabled ! {1}\n ".format(colors["g"], colors["n"]))
+
             elif setnum == 2:
                 sqlcheck = input("{0} Scanning for SQLI/XSS Attacks ? (y/n) \n {1}-->{2} ".format(colors["w"], colors["r"], colors["n"]))
                 if sqlcheck == "y":
                     sqlxss = True
                     print("{0} SQLI/XSS attack scanning activated ! {1} \n".format(colors["g"], colors["n"]))
+                else:
+                    print("{0} SQLI/XSS attack scanning disabled ! {1} \n".format(colors["g"], colors["n"]))
             elif setnum == 3:
                 sndmail = input("{0} Sending email for alerts ? (y/n)")
                 if sndmail == "y":
@@ -242,11 +251,15 @@ def get_opt():  # get options from user keyboard and use above functions for han
                             apache2conf = open("inc/apache2.conf", "r").read()
                             apache2confread = open(apache2confpath, "r").read().replace(apache2conf, "")
                             apache2confrep = open("inc/apache2.conf", "r").read().replace(apache2confline, "<Directory {0}>\n".format(rootdir))
-                            open(apache2confpath, "w").write(apache2confread + "\n\n" + apache2confrep)
-                            open("inc/apache2.conf", "w").write(apache2confrep)
-                            attack_do = rootdir
-                            bashexec("sudo service {0} reload".format(apachename))
-                            print("{0} Automatic ip blocker has been activated !\n {1}".format(colors["g"], colors["n"]))
+                            if apache2confrep in apache2confread :
+                                attack_do = rootdir
+                                print("{0} Automatic ip blocker is already activated !\n {1}".format(colors["g"],colors["n"]))
+                            else:
+                                open(apache2confpath, "w").write(apache2confread + "\n\n" + apache2confrep)
+                                open("inc/apache2.conf", "w").write(apache2confrep)
+                                attack_do = rootdir
+                                bashexec("sudo service {0} reload".format(apachename))
+                                print("{0} Automatic ip blocker has been activated !\n {1}".format(colors["g"], colors["n"]))
                 else:
                     print("{0} Please Enter A Valid Option !{1}".format(colors["r"], colors["n"]))
             elif setnum == 5:
@@ -255,7 +268,7 @@ def get_opt():  # get options from user keyboard and use above functions for han
                     apache2confr = open(apache2confpath, "r").read()
                     if "LogLevel dumpio:trace7\nDumpIOInput On" in apache2confr:
                         posts = True
-                        print("{0} POST method requests monitoring already is active !\n {1}".format(colors["g"], colors["n"]))
+                        print("{0} POST method requests monitoring is already activated !\n {1}".format(colors["g"], colors["n"]))
                     else:
                         open(apache2confpath, "w").write(apache2confr + "\nLogLevel dumpio:trace7\nDumpIOInput On")
                         posts = True
@@ -314,7 +327,10 @@ def get_opt():  # get options from user keyboard and use above functions for han
             if directory == "":
                 print(" {0} Please Define an directory for scan ! {1} ".format(colors["r"], colors["n"]))
             else:
-                directory = "-d{0}".format(directory)
+                if directory == False:
+                    directory = ""
+                else:
+                    directory = "-d{0}".format(directory)
                 if emailV:
                     email = "-Etrue"
                 else:
