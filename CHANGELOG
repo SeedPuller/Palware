@@ -1,3 +1,6 @@
+# 2.3.1
+File watching mode could be disabled in menu 
+alerting got more comfortable (i.e. unnecessary logs won't send to email)
 # 2.3.0
 Now , RedHat based distro's can use palware !
 POST requests monitoring problem fixed
