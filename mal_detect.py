@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# ver 2.3.0
+# ver 2.3.1
 import subprocess
 import re
 import os
@@ -70,8 +70,10 @@ def banip(ip):                     # Ban a ip address from apache configuration
     global reaload, iplistpath
     ipsban = "Require not ip " + ip
     ipsread = open(iplistpath, "r").read() # Banned-ip list
+    if ip in ipsread:
+        return False
     open(iplistpath, "w").write(ipsread + "\n{0}".format(ipsban))
-    alert("Ip : {0} Has been banned !".format(ip))
+    alert("Ip : {0} Has been banned !".format(ip), False)
     reaload = 1
 
 
@@ -163,23 +165,24 @@ def regex(pattern,code,whitelist, ret=None, ignore=1):
     if whitelist:
         return False
     if ignore == 1:
-        if re.search(pattern,code,re.IGNORECASE) != None:
+        if re.search(pattern, code, re.IGNORECASE) != None:
             if ret != None:
                 return re.search(pattern, code, re.IGNORECASE).group(0)
             return True
         else:
             return False
     else:
-        if re.search(pattern,code) != None:
-            if ret != None:
+        if re.search(pattern, code) != None:
+            if ret is not None:
                 return re.search(pattern, code).group(0)
             return True
         else:
             return False
 
-def sqlxsscheck(post):   # Checking POST and GET requests for SQLI or XSS attacks
+
+def sqlxsscheck(post):  # Checking POST and GET requests for SQLI or XSS attacks
     global nowtime, rootdir
-    apachelog = open(getlog, "r").readlines() # read GET requests log
+    apachelog = open(getlog, "r").readlines()  # read GET requests log
     if len(apachelog) > 0:
         # sqli and xss regexes
 
@@ -245,10 +248,9 @@ def sqlxsscheck(post):   # Checking POST and GET requests for SQLI or XSS attack
                                 banip(ip)
 
 
-
-def alert(text):
+def alert(text, smail=True):
     global email
-    if email:
+    if email and smail:
         emailinf = open("inc/mail.txt", "r").readlines()
         userpass = emailinf[0].split(":")
         emuser = userpass[0]
@@ -269,14 +271,14 @@ def checkfile(item):
     if item in mal_execpt:
         return False
     global formatallow, editAbleF
-    global alfa, ini_pro, eval_pro, executions, php_uname, fupload, weevely, defacement, otherScripts, phpscript, base64, symlink, filefunc, malicious_coding
+    global REGEXES
     global email
     global maldo, mal_move_dest
     global nowtime
     # detected malware names ...
     malwares = {}
 
-        # file infos - format
+    # file infos - format
     file_info = os.path.splitext(item)
     fformat = file_info[1].lower()
     if fformat in formatallow:
@@ -314,7 +316,7 @@ def checkfile(item):
 # handling arguments
 
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], 'd:E:m:M:a:p:s', ['directory=',"email=", "maldo=", "mal-move-dest=", "attack-do=", "post", "sqlxss",])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'd:E:m:M:a:p:s', ['directory=', "email=", "maldo=", "mal-move-dest=", "attack-do=", "post", "sqlxss", ])
 except getopt.GetoptError as e:
     print(e)
     sys.exit(2)
@@ -345,13 +347,15 @@ num = 0
 while True:  # run scanning functions until the world exists !
     if num < 1:
         nowtime = time.asctime(time.localtime(time.time()))  # get now date and time for log just for first start
-        alert(" \n ==== \n" + nowtime + "- Started With These Args : \n directory : " + directory + "\n Do-with-malwares : " + maldo + "\n malware-move-dest :" + mal_move_dest + "\n === \n ")
-        runinotify(directory)
+        alert(" \n ==== \n" + nowtime + "- Palware Started Successfully \n === \n ", False)
+        if directory != "":
+            runinotify(directory)
     if reaload == 1:
         if str(num/10).split(".")[1] == "0":
             bashexec("sudo service {0} reload".format(apachename))
             reaload = 0
-    scan()
+    if directory != "":
+        scan()
     command_execute()
     if sqlxss:
         sqlxsscheck(posts)
