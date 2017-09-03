@@ -24,13 +24,8 @@ if "ubuntu" in platf:
 
     # editing configs and save them .
 
-<<<<<<< HEAD
     open("{0}/sites-available/000-default.conf".format(apacheconfpath), "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/palware/post.log\n</VirtualHost>"))
     open("{0}/sites-available/default-ssl.conf".format(apacheconfpath), "w").write(apachesslconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/palware/post.log\n</VirtualHost>"))
-=======
-    open("{0}/sites-available/000-default.conf".format(apacheconfpath), "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n</VirtualHost>"))
-    open("{0}/sites-available/default-ssl.conf".format(apacheconfpath), "w").write(apachesslconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n</VirtualHost>"))
->>>>>>> 774203e60a1f5ff9ff024e640aa9cec6d0cac3ec
 
 else:
     apacheconfpath = "/etc/httpd/conf/"
@@ -42,18 +37,11 @@ else:
 
     if vhostpath == "":
         apachenormconf = open("/etc/httpd/conf.d/vhost.conf", "r").read()
-<<<<<<< HEAD
         open("/etc/httpd/conf.d/vhost.conf", "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/palware/post.log\n</VirtualHost>"))
     else:
         apachenormconf = open(vhostpath, "r").read()
         open(vhostpath, "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/post.log\n</VirtualHost>"))
-=======
         open("/etc/httpd/conf.d/vhost.conf", "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n</VirtualHost>"))
-    else:
-        apachenormconf = open(vhostpath, "r").read()
-        open(vhostpath, "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n</VirtualHost>"))
->>>>>>> 774203e60a1f5ff9ff024e640aa9cec6d0cac3ec
-
 
 
 
