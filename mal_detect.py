@@ -1,5 +1,9 @@
 #!/usr/bin/python3
+<<<<<<< HEAD
 # ver 2.3.2
+=======
+# ver 2.3.1
+>>>>>>> 774203e60a1f5ff9ff024e640aa9cec6d0cac3ec
 import subprocess
 import re
 import os

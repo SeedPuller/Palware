@@ -12,7 +12,11 @@ if not os.path.exists("inc/installed.txt"):
 
 colors = {"g": "\033[32m", "n": "\033[m", "r": "\033[31m", "w": "\033[37m", "o": "\033[33m"}
 print(colors["r"] + open("inc/banner.txt").read() + colors["n"])
+<<<<<<< HEAD
 print(" %s [+]  Web Threat Finder Version 2.3.2\n\n%s" % (colors["g"], colors["n"]))
+=======
+print(" %s [+]  Web Threat Finder Version 2.3.1\n\n%s" % (colors["g"], colors["n"]))
+>>>>>>> 774203e60a1f5ff9ff024e640aa9cec6d0cac3ec
 
 # vars
 platf = platform.platform().lower()
@@ -208,7 +212,10 @@ def get_opt():  # get options from user keyboard and use above functions for han
                     sqlxss = True
                     print("{0} SQLI/XSS attack scanning activated ! {1} \n".format(colors["g"], colors["n"]))
                 else:
+<<<<<<< HEAD
                     sqlxss = False
+=======
+>>>>>>> 774203e60a1f5ff9ff024e640aa9cec6d0cac3ec
                     print("{0} SQLI/XSS attack scanning disabled ! {1} \n".format(colors["g"], colors["n"]))
             elif setnum == 3:
                 sndmail = input("{0} Sending email for alerts ? (y/n)")
@@ -277,7 +284,10 @@ def get_opt():  # get options from user keyboard and use above functions for han
                         print("{0} POST method requests monitoring activated !\n {1}".format(colors["g"], colors["n"]))
                 else:
                     open(apache2confpath, "w").write(apache2confr.replace("LogLevel dumpio:trace7\nDumpIOInput On", ""))
+<<<<<<< HEAD
                     bashexec("sudo service {0} reload".format(apachename))
+=======
+>>>>>>> 774203e60a1f5ff9ff024e640aa9cec6d0cac3ec
                     print("{0} POST method requests monitoring disabled !\n {1}".format(colors["g"], colors["n"]))
             else:
                 pass

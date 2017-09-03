@@ -1,0 +1,47 @@
+# 2.3.1
+File watching mode could be disabled in menu 
+alerting got more comfortable (i.e. unnecessary logs won't send to email)
+# 2.3.0
+Now , RedHat based distro's can use palware !
+POST requests monitoring problem fixed
+Installation problem fixed
+application running problem fixed
+file scanning crash fixed
+palware code is now more clear for another programmers
+# 2.2.1
+from now , Palware alerts/blocks SQLI/XSS attacks that sended from POST method !
+Application being faster by removing unusable operations .
+# 2.2
+Attacker(s) ip adress(s) will be blocked automatically ! 
+blocking ip(s) problem fixed
+application stopping problem fixed 
+XSS/SQLI multiple alert fixed
+# 2.1.2
+Now you can block ip adresses from application menu !
+# 2.1.1
+alerting problem fixed
+application stopping problem fixed
+# 2.1
+find & alert XSS/SQLI testing
+# 2.0
+now , executing malicious bash commands will be alerted .
+# 1.9
+UI improved and some bug fixed
+# 1.8 
+scanning structure changed . now its more useful
+# Ver 1.7
+some bug fixed
+# 1.6
+Many bugs has been fixed and some of filters has been deleted cause of making mistakes on "WordPress" and "Joomla" CMS's .
+# 1.5
+Now you can set what should script do with malwares ! move them or just saveLog/sendMail ?! its on your choice .
+# 1.4
+Now you can save your options/configurations to use them in another time without spending time for setting them.
+# 1.3
+Now you can be notify by email when any malwares find !
+# 1.2
+Now you have a UI to control and use script easier 
+# 1.1
+Script made more carefully
+# 1.0
+In last 10 updates , many bugs fixed and script being faster .
