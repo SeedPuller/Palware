@@ -12,20 +12,22 @@ print(" {0}.::: Palware Installation :::. {1}\n".format(colors["orange"], colors
 
 platf = platform.platform().lower()
 
+configreader = open("inc/palware.conf", "r").readlines()
+vhostsname = configreader[1].split(":")[1].split(",")
+
 if "ubuntu" in platf:
     apacheconfpath = "/etc/apache2/"
     inotify = "sudo apt install inotify-tools -y"
     auditd = "sudo apt install auditd -y"
     apachename = "apache2"
 
-    # opening configs
-    apachenormconf = open("{0}/sites-available/000-default.conf".format(apacheconfpath), "r").read()
-    apachesslconf = open("{0}/sites-available/default-ssl.conf".format(apacheconfpath), "r").read()
+    for vpath in vhostsname:
+        # opening configs
+        apachenormconf = open("{0}/sites-available/{1}".format(apacheconfpath, vpath), "r").read()
 
-    # editing configs and save them .
+        # editing configs and save them .
 
-    open("{0}/sites-available/000-default.conf".format(apacheconfpath), "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/palware/post.log\n</VirtualHost>"))
-    open("{0}/sites-available/default-ssl.conf".format(apacheconfpath), "w").write(apachesslconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/palware/post.log\n</VirtualHost>"))
+        open("{0}/sites-available/{1}".format(apacheconfpath, vpath), "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/palware/post.log\n</VirtualHost>"))
 
 else:
     apacheconfpath = "/etc/httpd/conf/"
@@ -33,16 +35,9 @@ else:
     auditd = "sudo yum -y install audit"
     apachename = "httpd"
 
-    vhostpath = input("{0} Please Enter your vhost config path . Leave this blank to use default value (Default = /etc/httpd/conf.d/vhost.conf) \n {1}-->{2} ".format(colors["white"], colors["red"], colors["normal"]))
-
-    if vhostpath == "":
-        apachenormconf = open("/etc/httpd/conf.d/vhost.conf", "r").read()
-        open("/etc/httpd/conf.d/vhost.conf", "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/palware/post.log\n</VirtualHost>"))
-    else:
-        apachenormconf = open(vhostpath, "r").read()
-        open(vhostpath, "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/post.log\n</VirtualHost>"))
-        open("/etc/httpd/conf.d/vhost.conf", "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n</VirtualHost>"))
-
+    for vpath in vhostsname:
+        apachenormconf = open("/etc/httpd/conf.d/{0}".format(vpath), "r").read()
+        open("/etc/httpd/conf.d/{0}".format(vpath), "w").write(apachenormconf.replace("</VirtualHost>", "      CustomLog /var/log/palware/apache2.log combined\n      ErrorLog /var/log/palware/post.log\n</VirtualHost>"))
 
 
 def install_inotify():        
