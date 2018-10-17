@@ -1,3 +1,6 @@
+# Warning
+-  This application is under development and may cause errors. DO NOT use in Production Mode, yet.
+
 # About
 - Palware is a threat finder/ WebSite Security Assistant wich :
     - Finds and alert/block malicious files like Web Shellers , Backdoors and etc.
